@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import customerRoutes from "./routes/customer.routes.js";
 import cors from "cors";
 import productRoutes from "./routes/product.routes.js";
+import cartRoutes from "./routes/cart.routes.js";
 dotenv.config();
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(
 );
 app.use("/customers", customerRoutes);
 app.use("/products", productRoutes);
+app.use("/cart", cartRoutes);
 
 app.get("/", (req, res) => {
   res.json({
