@@ -13,6 +13,7 @@ const Wishlist = () => {
         const response = await axiosInstance.get("/customers/wishlist");
 
         setWishlist(response.data.wishlist);
+        setError(false);
       } catch (error) {
         console.log(error);
         setError(true);
@@ -22,6 +23,10 @@ const Wishlist = () => {
     };
 
     fetchWishlist();
+
+    window.addEventListener("focus", fetchWishlist);
+
+    return () => window.removeEventListener("focus", fetchWishlist);
   }, []);
 
   if (loading) {
