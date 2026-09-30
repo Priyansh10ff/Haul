@@ -23,6 +23,8 @@ const ProductCard = ({
   const [cartSuccess, setCartSuccess] = useState(false);
 
   useEffect(() => {
+    if (!wishlist) return;
+
     const exists = wishlist.some(
       (item) => item._id === product._id
     );
@@ -37,7 +39,7 @@ const ProductCard = ({
   const quantity = cartItem?.quantity || 0;
 
   const handleWishlist = async () => {
-    if (wishlistLoading) return;
+    if (wishlistLoading || !wishlist) return;
 
     try {
       setWishlistLoading(true);
@@ -51,6 +53,9 @@ const ProductCard = ({
       onWishlistChange?.(nextIsWishlisted);
     } catch (error) {
       console.log(error);
+      alert(
+        error.response?.data?.message || "Unable to update wishlist",
+      );
     } finally {
       setWishlistLoading(false);
     }
@@ -95,7 +100,7 @@ const ProductCard = ({
         {/* Wishlist */}
         <button
           type="button"
-          disabled={wishlistLoading}
+          disabled={wishlistLoading || !wishlist}
           onClick={handleWishlist}
           className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-xl shadow-sm backdrop-blur transition-all duration-200 hover:scale-110 active:scale-90 disabled:opacity-50"
         >

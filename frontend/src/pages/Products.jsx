@@ -10,6 +10,7 @@ import CategoryFilter from "../components/CategoryFilter";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
+  const [wishlist, setWishlist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -41,6 +42,20 @@ const Products = () => {
 
     fetchProducts();
   }, [search, category]);
+
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      try {
+        const response = await axiosInstance.get("/customers/wishlist");
+        setWishlist(response.data.wishlist || []);
+      } catch (error) {
+        console.log(error);
+        setWishlist([]);
+      }
+    };
+
+    fetchWishlist();
+  }, []);
 
   const handleCategoryClick = (
     selectedCategory,
@@ -333,6 +348,26 @@ const Products = () => {
                 <ProductCard
                   key={product._id}
                   product={product}
+                  wishlist={wishlist}
+                  onWishlistChange={(isWishlisted) => {
+                    setWishlist((currentWishlist) => {
+                      if (isWishlisted) {
+                        if (
+                          currentWishlist.some(
+                            (item) => item._id === product._id,
+                          )
+                        ) {
+                          return currentWishlist;
+                        }
+
+                        return [...currentWishlist, product];
+                      }
+
+                      return currentWishlist.filter(
+                        (item) => item._id !== product._id,
+                      );
+                    });
+                  }}
                 />
               ))}
             </div>
