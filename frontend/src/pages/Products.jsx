@@ -75,6 +75,13 @@ const Products = () => {
               Products
             </a>
 
+            <a
+              href="/wishlist"
+              className="transition hover:text-[#ff6b35]"
+            >
+              Wishlist
+            </a>
+
             <button
               type="button"
               onClick={() =>
@@ -87,6 +94,13 @@ const Products = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            <a
+              href="/wishlist"
+              className="text-sm font-semibold text-gray-600 transition hover:text-[#ff6b35] md:hidden"
+            >
+              Wishlist
+            </a>
+
             <span className="hidden text-sm text-gray-500 sm:block">
               Discover more. Shop better.
             </span>

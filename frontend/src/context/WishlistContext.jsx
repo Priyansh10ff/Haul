@@ -59,7 +59,7 @@ export const WishlistProvider = ({ children }) => {
 
   const removeFromWishlist = async (productId) => {
     try {
-      const response = await axiosInstance.delete(
+      const response = await axiosInstance.post(
         `/customers/wishlist/${productId}`,
       );
 

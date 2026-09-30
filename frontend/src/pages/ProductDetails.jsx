@@ -55,7 +55,7 @@ const ProductDetails = () => {
       setWishlistLoading(true);
 
       if (isWishlisted) {
-        await axiosInstance.delete(`/customers/wishlist/${product._id}`);
+        await axiosInstance.post(`/customers/wishlist/${product._id}`);
 
         setWishlist((prev) =>
           prev.filter((item) => item._id !== product._id),

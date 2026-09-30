@@ -3,7 +3,13 @@ import { useNavigate } from "react-router-dom";
 import axiosInstance from "../services/api";
 import { useCart } from "../context/CartContext";
 
-const ProductCard = ({ product, wishlist = [] }) => {
+const EMPTY_WISHLIST = [];
+
+const ProductCard = ({
+  product,
+  wishlist = EMPTY_WISHLIST,
+  onWishlistChange,
+}) => {
   const navigate = useNavigate();
 
   const {
@@ -36,19 +42,13 @@ const ProductCard = ({ product, wishlist = [] }) => {
     try {
       setWishlistLoading(true);
 
-      if (isWishlisted) {
-        await axiosInstance.delete(
-          `/customers/wishlist/${product._id}`
-        );
+      await axiosInstance.post(
+        `/customers/wishlist/${product._id}`
+      );
 
-        setIsWishlisted(false);
-      } else {
-        await axiosInstance.post(
-          `/customers/wishlist/${product._id}`
-        );
-
-        setIsWishlisted(true);
-      }
+      const nextIsWishlisted = !isWishlisted;
+      setIsWishlisted(nextIsWishlisted);
+      onWishlistChange?.(nextIsWishlisted);
     } catch (error) {
       console.log(error);
     } finally {
