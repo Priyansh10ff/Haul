@@ -1,6 +1,39 @@
-# ShopKart
+# ShopKart 🛍️
 
-ShopKart is a full-stack e-commerce web application built using the MERN stack.
+ShopKart is a full-stack MERN e-commerce application built to practice authentication, product management, wishlist functionality, cart management, and frontend state management.
+
+## Features
+
+### Authentication
+- Customer registration and login
+- JWT-based authentication
+- HTTP-only authentication cookie
+- Protected and public routes
+- Logout
+- Change password
+
+### Products
+- View all products
+- View individual product details
+- Search products
+- Filter products by category
+- Product stock display
+- Responsive product cards
+
+### Wishlist
+- Add products to wishlist
+- Remove products from wishlist
+- View the user's wishlist
+- Wishlist state is reflected on product cards and product details
+
+### Cart
+- Add products to cart
+- View cart items
+- Increase/decrease product quantity
+- Remove products from cart
+- Quantity checked against product stock
+- Cart count shared across the application
+- Cart state managed with React Context
 
 ## Tech Stack
 
@@ -9,6 +42,7 @@ ShopKart is a full-stack e-commerce web application built using the MERN stack.
 - React Router
 - Axios
 - Tailwind CSS
+- React Context API
 
 ### Backend
 - Node.js
@@ -17,125 +51,157 @@ ShopKart is a full-stack e-commerce web application built using the MERN stack.
 - Mongoose
 - JWT
 - bcrypt
-- Cookie-based authentication
-
-## Features
-
-### Authentication
-- Customer registration
-- Customer login
-- Customer logout
-- Get logged-in customer
-- Change password
-- Protected routes
-- HTTP-only authentication cookie
-
-### Products
-- View all products
-- Search products
-- Filter products by category
-- View individual product details
-- Display product price, stock, category, and image
-
-### Wishlist
-- Add product to wishlist
-- Remove product from wishlist
-- View wishlist
-- Single API route for wishlist add/remove toggle
-- Wishlist status on product cards
-- Add/Remove Wishlist button on product details
-
-## API Routes
-
-### Customer Routes
-
-| Method | Route | Description |
-|---|---|---|
-| POST | `/customers/register` | Register customer |
-| POST | `/customers/login` | Login customer |
-| GET | `/customers/me` | Get logged-in customer |
-| POST | `/customers/logout` | Logout customer |
-| PATCH | `/customers/change-password` | Change password |
-| POST | `/customers/wishlist/:productId` | Add or remove wishlist item |
-| GET | `/customers/wishlist` | Get customer's wishlist |
-
-### Product Routes
-
-| Method | Route | Description |
-|---|---|---|
-| POST | `/products` | Create product |
-| GET | `/products` | Get products |
-| GET | `/products/:id` | Get single product |
-
-## Wishlist Logic
-
-The wishlist uses one toggle endpoint instead of separate add and delete routes.
-
-```text
-POST /customers/wishlist/:productId
-
-Product already exists
-        ↓
-     Remove
-
-Product does not exist
-        ↓
-       Add
-```
-
-## Authentication Flow
-
-```text
-Customer Login
-      ↓
-Verify email and password
-      ↓
-Generate JWT
-      ↓
-Store JWT in HTTP-only cookie
-      ↓
-Browser sends cookie
-      ↓
-Authentication middleware verifies token
-      ↓
-req.customer is available
-      ↓
-Protected controller executes
-```
+- cookie-parser
+- CORS
 
 ## Project Structure
 
 ```text
-ShopKart
-├── backend
-│   ├── controllers
-│   ├── middlewares
-│   ├── models
-│   ├── routes
-│   ├── utils
-│   ├── server.js
-│   └── .env
+ShopKart/
+├── backend/
+│   ├── controllers/
+│   ├── middlewares/
+│   ├── models/
+│   ├── routes/
+│   ├── utils/
+│   └── server.js
 │
-└── frontend
-    └── src
-        ├── components
-        ├── pages
-        ├── context
-        ├── services
+└── frontend/
+    └── src/
+        ├── components/
+        ├── context/
+        ├── pages/
+        ├── services/
         └── App.jsx
 ```
 
-## Environment Variables
+## How the Frontend Works
 
-Create a `.env` file inside the backend directory.
+The main flow is:
 
-```env
-PORT=8001
-MONGO_URL=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
+```text
+React Component
+      ↓
+Axios Request
+      ↓
+Express Route
+      ↓
+Controller
+      ↓
+MongoDB
+      ↓
+Response
+      ↓
+React State / Context
+      ↓
+UI Update
 ```
 
-Do not commit `.env` to GitHub.
+## Cart Context
+
+The cart is shared between components using React Context API.
+
+Without Context, cart data would have to be passed through props between components. Context provides one shared cart state that components such as the Navbar, Product Details, and Cart page can access.
+
+```text
+CartProvider
+     ↓
+Shared cart state
+     ├── Navbar
+     ├── Product Details
+     ├── Products
+     └── Cart
+```
+
+When the user adds or removes an item:
+
+```text
+User Action
+    ↓
+Cart Context function
+    ↓
+Backend API
+    ↓
+Database update
+    ↓
+Update React state
+    ↓
+UI updates
+```
+
+The Context manages frontend state, while MongoDB stores the persistent cart data.
+
+## Wishlist Flow
+
+```text
+User clicks Wishlist
+        ↓
+POST / DELETE request
+        ↓
+Backend updates wishlist
+        ↓
+Frontend updates wishlist state
+        ↓
+UI reflects the new state
+```
+
+The Product Details page gets the product ID from the URL using React Router's `useParams()`.
+
+```text
+/products/:id
+       ↓
+useParams()
+       ↓
+product ID
+       ↓
+GET /products/:id
+       ↓
+Product details
+```
+
+## Mongoose Populate
+
+Cart and wishlist store references to products.
+
+Without `populate()`:
+
+```text
+cart → product ID
+```
+
+With `populate()`:
+
+```text
+cart → product details
+```
+
+This allows the frontend to receive information such as the product name, price, image, and stock.
+
+## API Configuration
+
+The frontend uses a centralized Axios instance in:
+
+```text
+frontend/src/services/api.js
+```
+
+It contains the backend URL and enables credentials so authentication cookies can be sent with requests.
+
+## Routing
+
+React Router handles navigation.
+
+Main routes:
+
+```text
+/login
+/signup
+/home
+/products
+/products/:id
+```
+
+Protected routes require the user to be authenticated.
 
 ## Running the Project
 
@@ -155,26 +221,37 @@ npm install
 npm run dev
 ```
 
-## Current Status
+Configure MongoDB and the required environment variables before starting the backend.
 
-### Completed
-- Customer authentication
+## Environment Variables
+
+```text
+MONGO_URI
+JWT_SECRET
+```
+
+Never commit real secrets or API keys to GitHub.
+
+## Concepts Demonstrated
+
+- REST APIs
 - JWT authentication
+- HTTP-only cookies
+- Authentication middleware
 - Protected routes
-- Product listing
-- Product search
-- Category filtering
-- Product details
-- Wishlist toggle
-- Wishlist status on product cards
-- Wishlist status on product details
-
-### To Be Implemented
-- Add to cart
+- React state management
+- React Context API
+- Axios
+- MongoDB references
+- Mongoose populate
+- Product search and filtering
+- Wishlist management
 - Cart management
-- Checkout
-- Order creation
-- Order history
-- Payment integration
-- Product image optimization / Cloudinary
-- Admin/product management
+- Quantity management
+- Frontend/backend synchronization
+
+## Author
+
+**Priyansh**
+
+Built as a MERN stack e-commerce project for learning and development practice.
