@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axiosInstance from "../services/api";
 import ProductCard from "../components/ProductCard";
+import Navbar from "../components/Navbar";
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
@@ -48,7 +49,9 @@ const Wishlist = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f7] px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#faf9f7]">
+      <Navbar />
+      <main className="px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8">
           <p className="text-sm font-medium text-[#ff6b35]">YOUR COLLECTION</p>
@@ -82,6 +85,7 @@ const Wishlist = () => {
           </div>
         )}
       </div>
+      </main>
     </div>
   );
 };

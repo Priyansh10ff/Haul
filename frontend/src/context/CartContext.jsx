@@ -1,30 +1,28 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
-
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import axiosInstance from "../services/api";
 
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState([]);
+  const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState("");
 
   const fetchCart = async () => {
     try {
-      setError(false);
+      setLoading(true);
+      setError("");
 
-      const response =
-        await axiosInstance.get("/cart");
+      const response = await axiosInstance.get("/customers/cart");
 
-      setCartItems(response.data.cart || []);
+      setCart(
+        response.data.cart ||
+          response.data.customer?.cart ||
+          []
+      );
     } catch (error) {
       console.log(error);
-      setError(true);
+      setError("Unable to load your cart.");
     } finally {
       setLoading(false);
     }
@@ -32,96 +30,134 @@ export const CartProvider = ({ children }) => {
 
   useEffect(() => {
     fetchCart();
-
-    const interval = setInterval(() => {
-      fetchCart();
-    }, 5000);
-
-    return () => {
-      clearInterval(interval);
-    };
   }, []);
 
   const addToCart = async (productId) => {
     try {
-      const response =
-        await axiosInstance.post(
-          `/cart/${productId}`,
-        );
+      const response = await axiosInstance.post(
+        `/customers/cart/${productId}`
+      );
 
-      setCartItems(response.data.cart || []);
+      const updatedCart =
+        response.data.cart ||
+        response.data.customer?.cart;
 
-      return response.data;
+      if (updatedCart) {
+        setCart(updatedCart);
+      } else {
+        await fetchCart();
+      }
+
+      return {
+        success: true,
+        message: response.data.message || "Added to cart",
+      };
     } catch (error) {
       console.log(error);
-      throw error;
+
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          "Unable to add product to cart",
+      };
     }
   };
 
-  const updateQuantity = async (
-    productId,
-    quantity,
-  ) => {
+  const updateQuantity = async (productId, quantity) => {
     try {
-      const response =
-        await axiosInstance.patch(
-          `/cart/${productId}`,
-          {
-            quantity,
-          },
-        );
+      const response = await axiosInstance.patch(
+        `/customers/cart/${productId}`,
+        {
+          quantity,
+        }
+      );
 
-      setCartItems(response.data.cart || []);
+      const updatedCart =
+        response.data.cart ||
+        response.data.customer?.cart;
 
-      return response.data;
+      if (updatedCart) {
+        setCart(updatedCart);
+      } else {
+        await fetchCart();
+      }
+
+      return {
+        success: true,
+        message: response.data.message || "Cart updated",
+      };
     } catch (error) {
       console.log(error);
-      throw error;
+
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          "Unable to update cart",
+      };
     }
   };
 
   const removeFromCart = async (productId) => {
     try {
-      const response =
-        await axiosInstance.delete(
-          `/cart/${productId}`,
-        );
+      const response = await axiosInstance.delete(
+        `/customers/cart/${productId}`
+      );
 
-      setCartItems(response.data.cart || []);
+      const updatedCart =
+        response.data.cart ||
+        response.data.customer?.cart;
 
-      return response.data;
+      if (updatedCart) {
+        setCart(updatedCart);
+      } else {
+        await fetchCart();
+      }
+
+      return {
+        success: true,
+        message: response.data.message || "Removed from cart",
+      };
     } catch (error) {
       console.log(error);
-      throw error;
+
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          "Unable to remove product",
+      };
     }
   };
 
-  const totalItems = cartItems.reduce(
-    (total, item) =>
-      total + item.quantity,
-    0,
-  );
+  const totalItems = useMemo(() => {
+    return cart.reduce(
+      (total, item) => total + item.quantity,
+      0
+    );
+  }, [cart]);
 
-  const subtotal = cartItems.reduce(
-    (total, item) =>
-      total +
-      item.product.price *
-        item.quantity,
-    0,
-  );
+  const subtotal = useMemo(() => {
+    return cart.reduce((total, item) => {
+      const price = item.product?.price || 0;
+
+      return total + price * item.quantity;
+    }, 0);
+  }, [cart]);
 
   return (
     <CartContext.Provider
       value={{
-        cartItems,
+        cart,
         loading,
         error,
         totalItems,
         subtotal,
-        fetchCart,
         addToCart,
         updateQuantity,
         removeFromCart,
+        fetchCart,
       }}
     >
       {children}

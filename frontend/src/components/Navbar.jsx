@@ -1,51 +1,103 @@
-import { useNavigate } from "react-router-dom";
-import axiosInstance from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import { Link, useLocation } from "react-router-dom";
+import { useCart } from "../context/CartContext";
 
 const Navbar = () => {
-  const navigate = useNavigate();
-  const { setCustomer } = useAuth();
+  const location = useLocation();
+  const { totalItems } = useCart();
 
-  const handleLogout = async () => {
-    try {
-      await axiosInstance.post("/customers/logout");
-      setCustomer(null);
-      navigate("/login");
-    } catch (error) {
-      console.log("Logout Failed : ", error);
-    }
+  const isActive = (path) => {
+    return location.pathname === path;
   };
 
   return (
-    <header className="border-b border-[#e5ded4] bg-[#D8D0C4]">
-      <nav className="mx-auto flex min-h-[76px] max-w-[1200px] items-center gap-6 px-6 py-4 lg:px-8">
-        <button
-          type="button"
-          onClick={() => navigate("/home")}
-          className="text-xl font-semibold tracking-[-0.7px]"
+    <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        {/* Logo */}
+        <Link
+          to="/home"
+          className="text-2xl font-bold tracking-tight transition-transform duration-200 hover:scale-[1.02]"
         >
-          ShopKart
-        </button>
+          Shop<span className="text-[#ff6b35]">Kart</span>
+        </Link>
 
-        <div className="ml-auto flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate("/products")}
-            className="rounded-full border border-[#303030] px-4 py-3 text-xs font-medium text-[#303030] transition hover:border-[#ff9918] hover:text-[#ff9918]"
+        {/* Links */}
+        <div className="hidden items-center gap-7 md:flex">
+          <Link
+            to="/home"
+            className={`text-sm font-medium transition-colors ${
+              isActive("/home")
+                ? "text-[#ff6b35]"
+                : "text-gray-600 hover:text-[#ff6b35]"
+            }`}
+          >
+            Home
+          </Link>
+
+          <Link
+            to="/products"
+            className={`text-sm font-medium transition-colors ${
+              isActive("/products")
+                ? "text-[#ff6b35]"
+                : "text-gray-600 hover:text-[#ff6b35]"
+            }`}
           >
             Products
-          </button>
+          </Link>
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-full border border-[#303030] px-4 py-3 text-xs font-medium text-[#303030] transition hover:border-[#ff9918] hover:text-[#ff9918]"
+          <Link
+            to="/wishlist"
+            className={`text-sm font-medium transition-colors ${
+              isActive("/wishlist")
+                ? "text-[#ff6b35]"
+                : "text-gray-600 hover:text-[#ff6b35]"
+            }`}
           >
-            Log Out
-          </button>
+            Wishlist
+          </Link>
+
+          <Link
+            to="/cart"
+            className={`group relative flex items-center gap-2 text-sm font-medium transition-colors ${
+              isActive("/cart")
+                ? "text-[#ff6b35]"
+                : "text-gray-600 hover:text-[#ff6b35]"
+            }`}
+          >
+            <span>Cart</span>
+
+            {/* Count */}
+            <span
+              key={totalItems}
+              className="flex h-6 min-w-6 animate-[pulse_0.3s_ease-out] items-center justify-center rounded-full bg-[#303030] px-1.5 text-xs font-bold text-white transition-transform"
+            >
+              {totalItems}
+            </span>
+          </Link>
         </div>
-      </nav>
-    </header>
+
+        {/* Mobile Cart */}
+        <div className="flex items-center gap-4 md:hidden">
+          <Link
+            to="/wishlist"
+            className={`text-sm font-semibold ${
+              isActive("/wishlist")
+                ? "text-[#ff6b35]"
+                : "text-gray-600"
+            }`}
+          >
+            Wishlist
+          </Link>
+          <Link
+            to="/cart"
+            aria-label={`Cart, ${totalItems} items`}
+            className="flex items-center gap-2 rounded-full bg-[#f5f2ed] px-4 py-2 text-sm font-semibold transition-all hover:bg-[#303030] hover:text-white active:scale-95"
+          >
+            🛒
+            <span>{totalItems}</span>
+          </Link>
+        </div>
+      </div>
+    </nav>
   );
 };
 

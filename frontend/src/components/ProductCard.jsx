@@ -1,53 +1,93 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useWishlist } from "../context/WishlistContext";
+import axiosInstance from "../services/api";
 import { useCart } from "../context/CartContext";
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, wishlist = [] }) => {
   const navigate = useNavigate();
 
   const {
-    isWishlisted,
-    addToWishlist,
-    removeFromWishlist,
-  } = useWishlist();
+    cart,
+    addToCart,
+  } = useCart();
 
-  const { addToCart } = useCart();
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [cartLoading, setCartLoading] = useState(false);
+  const [cartSuccess, setCartSuccess] = useState(false);
 
-  const productIsWishlisted = isWishlisted(
-    product._id,
+  useEffect(() => {
+    const exists = wishlist.some(
+      (item) => item._id === product._id
+    );
+
+    setIsWishlisted(exists);
+  }, [wishlist, product._id]);
+
+  const cartItem = cart.find(
+    (item) => item.product?._id === product._id
   );
 
+  const quantity = cartItem?.quantity || 0;
+
   const handleWishlist = async () => {
+    if (wishlistLoading) return;
+
     try {
-      if (productIsWishlisted) {
-        await removeFromWishlist(product._id);
+      setWishlistLoading(true);
+
+      if (isWishlisted) {
+        await axiosInstance.delete(
+          `/customers/wishlist/${product._id}`
+        );
+
+        setIsWishlisted(false);
       } else {
-        await addToWishlist(product._id);
+        await axiosInstance.post(
+          `/customers/wishlist/${product._id}`
+        );
+
+        setIsWishlisted(true);
       }
     } catch (error) {
       console.log(error);
+    } finally {
+      setWishlistLoading(false);
     }
   };
 
   const handleAddToCart = async () => {
-    try {
-      await addToCart(product._id);
-    } catch (error) {
-      console.log(error);
+    if (cartLoading || product.stock <= 0) return;
+
+    setCartLoading(true);
+    setCartSuccess(false);
+
+    const result = await addToCart(product._id);
+
+    if (result.success) {
+      setCartSuccess(true);
+
+      setTimeout(() => {
+        setCartSuccess(false);
+      }, 1500);
+    } else {
+      alert(result.message);
     }
+
+    setCartLoading(false);
   };
 
   return (
-    <div className="group overflow-hidden rounded-3xl border border-gray-200 bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <div className="group overflow-hidden rounded-3xl border border-gray-200 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       {/* Image */}
       <div className="relative h-64 overflow-hidden bg-[#f5f2ed]">
         <img
           src={product.image}
           alt={product.name}
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          loading="lazy"
+          className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
         />
 
-        {/* Category */}
         <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-700 backdrop-blur">
           {product.category}
         </span>
@@ -55,10 +95,15 @@ const ProductCard = ({ product }) => {
         {/* Wishlist */}
         <button
           type="button"
+          disabled={wishlistLoading}
           onClick={handleWishlist}
-          className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-xl shadow-sm backdrop-blur transition hover:scale-110"
+          className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-xl shadow-sm backdrop-blur transition-all duration-200 hover:scale-110 active:scale-90 disabled:opacity-50"
         >
-          {productIsWishlisted ? "❤️" : "♡"}
+          {wishlistLoading
+            ? "..."
+            : isWishlisted
+              ? "❤️"
+              : "♡"}
         </button>
       </div>
 
@@ -84,28 +129,49 @@ const ProductCard = ({ product }) => {
             : "Out of stock"}
         </p>
 
-        {/* Add to Cart */}
-        <button
-          type="button"
-          disabled={product.stock === 0}
-          onClick={handleAddToCart}
-          className="mt-5 w-full rounded-full bg-[#303030] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#ff6b35] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {product.stock === 0
-            ? "Out of Stock"
-            : "Add to Cart"}
-        </button>
+        {/* Cart status */}
+        {quantity > 0 && (
+          <div className="mt-3 rounded-xl bg-[#f5f2ed] px-4 py-2 text-center text-sm font-medium text-[#303030]">
+            {quantity}{" "}
+            {quantity === 1 ? "item" : "items"} in cart
+          </div>
+        )}
 
-        {/* View Details */}
-        <button
-          type="button"
-          onClick={() =>
-            navigate(`/products/${product._id}`)
-          }
-          className="mt-3 w-full rounded-full border border-gray-300 px-5 py-3 text-sm font-semibold text-[#303030] transition hover:bg-gray-100"
-        >
-          View Details →
-        </button>
+        {/* Actions */}
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() =>
+              navigate(`/products/${product._id}`)
+            }
+            className="rounded-full border border-gray-300 px-4 py-3 text-sm font-semibold text-[#303030] transition-all duration-200 hover:border-[#303030] hover:bg-[#303030] hover:text-white active:scale-95"
+          >
+            Details
+          </button>
+
+          <button
+            type="button"
+            disabled={
+              cartLoading ||
+              product.stock <= 0 ||
+              quantity >= product.stock
+            }
+            onClick={handleAddToCart}
+            className={`rounded-full px-4 py-3 text-sm font-semibold text-white transition-all duration-200 active:scale-95 ${
+              cartSuccess
+                ? "bg-green-600"
+                : "bg-[#303030] hover:bg-[#ff6b35]"
+            } disabled:cursor-not-allowed disabled:bg-gray-300`}
+          >
+            {cartLoading
+              ? "Adding..."
+              : cartSuccess
+                ? "✓ Added"
+                : quantity >= product.stock
+                  ? "Max Stock"
+                  : "Add to Cart"}
+          </button>
+        </div>
       </div>
     </div>
   );
