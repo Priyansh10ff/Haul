@@ -1,27 +1,37 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosInstance from "../services/api";
+import { useWishlist } from "../context/WishlistContext";
+import { useCart } from "../context/CartContext";
 
-const ProductCard = ({ product, wishlist = [] }) => {
+const ProductCard = ({ product }) => {
   const navigate = useNavigate();
 
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const {
+    isWishlisted,
+    addToWishlist,
+    removeFromWishlist,
+  } = useWishlist();
 
-  useEffect(() => {
-    const exists = wishlist.some((item) => item._id === product._id);
+  const { addToCart } = useCart();
 
-    setIsWishlisted(exists);
-  }, [wishlist, product._id]);
+  const productIsWishlisted = isWishlisted(
+    product._id,
+  );
 
   const handleWishlist = async () => {
     try {
-      const response = await axiosInstance.post(
-        `/customers/wishlist/${product._id}`,
-      );
+      if (productIsWishlisted) {
+        await removeFromWishlist(product._id);
+      } else {
+        await addToWishlist(product._id);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
-      setIsWishlisted((prev) => !prev);
-
-      console.log(response.data.message);
+  const handleAddToCart = async () => {
+    try {
+      await addToCart(product._id);
     } catch (error) {
       console.log(error);
     }
@@ -48,7 +58,7 @@ const ProductCard = ({ product, wishlist = [] }) => {
           onClick={handleWishlist}
           className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-xl shadow-sm backdrop-blur transition hover:scale-110"
         >
-          {isWishlisted ? "❤️" : "♡"}
+          {productIsWishlisted ? "❤️" : "♡"}
         </button>
       </div>
 
@@ -62,20 +72,37 @@ const ProductCard = ({ product, wishlist = [] }) => {
           ₹{product.price.toLocaleString("en-IN")}
         </p>
 
-        <div className="mt-3 flex items-center justify-between">
-          <p
-            className={`text-sm font-medium ${
-              product.stock > 0 ? "text-green-700" : "text-red-600"
-            }`}
-          >
-            {product.stock > 0 ? `${product.stock} units left` : "Out of stock"}
-          </p>
-        </div>
+        <p
+          className={`mt-3 text-sm font-medium ${
+            product.stock > 0
+              ? "text-green-700"
+              : "text-red-600"
+          }`}
+        >
+          {product.stock > 0
+            ? `${product.stock} units left`
+            : "Out of stock"}
+        </p>
 
+        {/* Add to Cart */}
         <button
           type="button"
-          onClick={() => navigate(`/products/${product._id}`)}
-          className="mt-5 w-full rounded-full bg-[#303030] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#ff6b35]"
+          disabled={product.stock === 0}
+          onClick={handleAddToCart}
+          className="mt-5 w-full rounded-full bg-[#303030] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#ff6b35] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {product.stock === 0
+            ? "Out of Stock"
+            : "Add to Cart"}
+        </button>
+
+        {/* View Details */}
+        <button
+          type="button"
+          onClick={() =>
+            navigate(`/products/${product._id}`)
+          }
+          className="mt-3 w-full rounded-full border border-gray-300 px-5 py-3 text-sm font-semibold text-[#303030] transition hover:bg-gray-100"
         >
           View Details →
         </button>

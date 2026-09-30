@@ -32,9 +32,7 @@ const Wishlist = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#faf9f7] py-20 text-center">
-        <h2 className="text-lg text-gray-500">
-          Loading wishlist...
-        </h2>
+        <h2 className="text-lg text-gray-500">Loading wishlist...</h2>
       </div>
     );
   }
@@ -53,9 +51,7 @@ const Wishlist = () => {
     <div className="min-h-screen bg-[#faf9f7] px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8">
-          <p className="text-sm font-medium text-[#ff6b35]">
-            YOUR COLLECTION
-          </p>
+          <p className="text-sm font-medium text-[#ff6b35]">YOUR COLLECTION</p>
 
           <h1 className="mt-2 text-3xl font-bold text-[#303030]">
             My Wishlist
@@ -81,10 +77,7 @@ const Wishlist = () => {
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {wishlist.map((product) => (
-              <ProductCard
-                key={product._id}
-                product={product}
-              />
+              <ProductCard key={product._id} product={product} />
             ))}
           </div>
         )}
