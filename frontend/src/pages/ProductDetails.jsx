@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useCart } from "../context/CartContext";
 import axiosInstance from "../services/api";
 
 const ProductDetails = () => {
   const { id } = useParams();
+  const { cart, addToCart } = useCart();
 
   const [product, setProduct] = useState(null);
   const [wishlist, setWishlist] = useState([]);
@@ -11,7 +13,12 @@ const ProductDetails = () => {
 
   const [loading, setLoading] = useState(true);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [cartLoading, setCartLoading] = useState(false);
+  const [cartSuccess, setCartSuccess] = useState(false);
   const [error, setError] = useState(false);
+
+  const cartItem = cart.find((item) => item.product?._id === product?._id);
+  const quantity = cartItem?.quantity || 0;
 
   // Fetch product and wishlist
   useEffect(() => {
@@ -74,6 +81,24 @@ const ProductDetails = () => {
     } finally {
       setWishlistLoading(false);
     }
+  };
+
+  const handleAddToCart = async () => {
+    if (cartLoading || !product || quantity >= product.stock) return;
+
+    setCartLoading(true);
+    setCartSuccess(false);
+
+    const result = await addToCart(product._id);
+
+    if (result.success) {
+      setCartSuccess(true);
+      setTimeout(() => setCartSuccess(false), 1500);
+    } else {
+      alert(result.message);
+    }
+
+    setCartLoading(false);
   };
 
   return (
@@ -163,10 +188,25 @@ const ProductDetails = () => {
               {/* Cart Button */}
               <button
                 type="button"
-                disabled={product.stock === 0}
-                className="mt-3 w-full rounded-full border border-[#303030] px-6 py-3 font-semibold text-[#303030] transition duration-300 hover:bg-[#303030] hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={
+                  cartLoading ||
+                  product.stock <= 0 ||
+                  quantity >= product.stock
+                }
+                onClick={handleAddToCart}
+                className={`mt-3 w-full rounded-full border border-[#303030] px-6 py-3 font-semibold transition duration-300 hover:bg-[#303030] hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
+                  cartSuccess ? "border-green-600 bg-green-600 text-white" : "text-[#303030]"
+                }`}
               >
-                {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                {cartLoading
+                  ? "Adding..."
+                  : cartSuccess
+                    ? "Added to Cart"
+                    : product.stock <= 0
+                      ? "Out of Stock"
+                      : quantity >= product.stock
+                        ? "Max Stock in Cart"
+                        : "Add to Cart"}
               </button>
             </div>
           </div>
