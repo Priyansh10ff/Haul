@@ -56,6 +56,17 @@ const Navbar = () => {
           </Link>
 
           <Link
+            to="/orders"
+            className={`text-sm font-medium transition-colors ${
+              isActive("/orders")
+                ? "text-[#ff6b35]"
+                : "text-gray-600 hover:text-[#ff6b35]"
+            }`}
+          >
+            Orders
+          </Link>
+
+          <Link
             to="/cart"
             className={`group relative flex items-center gap-2 text-sm font-medium transition-colors ${
               isActive("/cart")

@@ -131,6 +131,9 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  // Called after the backend has verified payment and emptied its own cart.
+  const clearCart = () => setCart([]);
+
   const totalItems = useMemo(() => {
     return cart.reduce(
       (total, item) => total + item.quantity,
@@ -158,6 +161,7 @@ export const CartProvider = ({ children }) => {
         updateQuantity,
         removeFromCart,
         fetchCart,
+        clearCart,
       }}
     >
       {children}
