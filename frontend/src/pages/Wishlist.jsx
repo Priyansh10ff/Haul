@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import axiosInstance from "../services/api";
 import ProductCard from "../components/ProductCard";
 import Navbar from "../components/Navbar";
@@ -32,18 +33,24 @@ const Wishlist = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#faf9f7] py-20 text-center">
+      <div className="min-h-screen bg-[#faf9f7] text-center">
+        <Navbar />
+        <div className="py-20">
         <h2 className="text-lg text-gray-500">Loading wishlist...</h2>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#faf9f7] py-20 text-center">
+      <div className="min-h-screen bg-[#faf9f7] text-center">
+        <Navbar />
+        <div className="py-20">
         <h2 className="text-lg text-red-600">
           Something went wrong while loading your wishlist.
         </h2>
+        </div>
       </div>
     );
   }
@@ -76,6 +83,13 @@ const Wishlist = () => {
             <p className="mt-2 text-sm text-gray-500">
               Add products to your wishlist and they will appear here.
             </p>
+
+            <Link
+              to="/products"
+              className="mt-6 inline-block rounded-full bg-[#303030] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#ff6b35]"
+            >
+              Browse Products →
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

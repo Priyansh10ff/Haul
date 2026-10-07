@@ -1,16 +1,34 @@
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 import customer from "../models/customer.model.js";
 import genToken from "../utils/generateToken.js";
 import Customer from "../models/customer.model.js";
 import Product from "../models/product.model.js";
 
-const cookieOptions = {
-  httpOnly: true,
-  secure: true,
+// Built per request so NODE_ENV from .env is already loaded.
+// In production the frontend and API live on different domains, so the
+// cookie must be SameSite=None + Secure for the browser to send it.
+const getCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // matches the 7d JWT expiry
+  };
 };
 
+// Case-insensitive match so accounts created before emails were
+// lowercased can still log in.
+const emailCollation = { locale: "en", strength: 2 };
+
 export const registerCustomer = async (req, res) => {
-  const { name, email, password, phone } = req.body;
+  const { name, password, phone } = req.body || {};
+  const email =
+    typeof req.body?.email === "string"
+      ? req.body.email.trim().toLowerCase()
+      : "";
 
   try {
     if (!name || !email || !password || !phone) {
@@ -20,7 +38,9 @@ export const registerCustomer = async (req, res) => {
       });
     }
 
-    const emailExists = await customer.findOne({ email });
+    const emailExists = await customer
+      .findOne({ email })
+      .collation(emailCollation);
 
     if (emailExists) {
       return res.status(409).json({
@@ -46,7 +66,7 @@ export const registerCustomer = async (req, res) => {
     });
 
     const token = genToken(newCustomer._id);
-    res.cookie("token", token, cookieOptions);
+    res.cookie("token", token, getCookieOptions());
 
     const newCustomerObj = newCustomer.toObject();
     delete newCustomerObj.password;
@@ -57,6 +77,15 @@ export const registerCustomer = async (req, res) => {
       newCustomer: newCustomerObj,
     });
   } catch (error) {
+    // Two sign-ups with the same email at the same time.
+    if (error?.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already exists",
+      });
+    }
+
+    console.log(error);
     res.status(500).json({
       success: false,
       message: "Internal Server Error",
@@ -66,7 +95,11 @@ export const registerCustomer = async (req, res) => {
 
 export const loginCustomer = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body || {};
+    const email =
+      typeof req.body?.email === "string"
+        ? req.body.email.trim().toLowerCase()
+        : "";
 
     if (!email || !password) {
       return res.status(400).json({
@@ -75,7 +108,9 @@ export const loginCustomer = async (req, res) => {
       });
     }
 
-    const emailExists = await customer.findOne({ email });
+    const emailExists = await customer
+      .findOne({ email })
+      .collation(emailCollation);
 
     if (!emailExists) {
       return res.status(401).json({
@@ -94,7 +129,7 @@ export const loginCustomer = async (req, res) => {
     }
 
     const token = genToken(emailExists._id);
-    res.cookie("token", token, cookieOptions);
+    res.cookie("token", token, getCookieOptions());
 
     const emailExistsObj = emailExists.toObject();
     delete emailExistsObj.password;
@@ -128,7 +163,9 @@ export const getCustomer = async (req, res) => {
 
 export const logoutCustomer = async (req, res) => {
   try {
-    res.clearCookie("token", cookieOptions);
+    // clearCookie must use the same path/sameSite/secure as when it was set.
+    const { maxAge, ...clearOptions } = getCookieOptions();
+    res.clearCookie("token", clearOptions);
     return res.status(200).json({
       success: true,
       message: "Logged out successfully",
@@ -199,6 +236,13 @@ export const updateWishlist = async (req, res) => {
   try {
     const userId = req.customer._id;
     const { productId } = req.params;
+
+    if (!mongoose.isValidObjectId(productId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product ID",
+      });
+    }
 
     const customer = await Customer.findById(userId);
     const product = await Product.findById(productId);

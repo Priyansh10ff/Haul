@@ -1,12 +1,21 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import axiosInstance from "../services/api";
+import { useAuth } from "./AuthContext";
 
 const CartContext = createContext();
 
+// Items whose product was deleted come back with product: null.
+const onlyValidItems = (items) => (items || []).filter((item) => item.product);
+
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { customer } = useAuth();
+  const customerId = customer?._id;
+
+  const [cart, setCartState] = useState([]);
+  const [loading, setLoading] = useState(Boolean(customerId));
   const [error, setError] = useState("");
+
+  const setCart = (items) => setCartState(onlyValidItems(items));
 
   const fetchCart = async () => {
     try {
@@ -28,9 +37,29 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  // Initial load. App remounts this provider when the customer changes.
   useEffect(() => {
-    fetchCart();
-  }, []);
+    if (!customerId) return;
+
+    let cancelled = false;
+
+    axiosInstance
+      .get("/customers/cart")
+      .then((response) => {
+        if (!cancelled) setCartState(onlyValidItems(response.data.cart));
+      })
+      .catch((error) => {
+        console.log(error);
+        if (!cancelled) setError("Unable to load your cart.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [customerId]);
 
   const addToCart = async (productId) => {
     try {
@@ -132,7 +161,7 @@ export const CartProvider = ({ children }) => {
   };
 
   // Called after the backend has verified payment and emptied its own cart.
-  const clearCart = () => setCart([]);
+  const clearCart = () => setCartState([]);
 
   const totalItems = useMemo(() => {
     return cart.reduce(
@@ -169,6 +198,7 @@ export const CartProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCart = () => {
   return useContext(CartContext);
 };

@@ -42,21 +42,23 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// Need to add the logic
 export const getProducts = async (req, res) => {
   try {
     const { search, category } = req.query;
 
     const query = {};
 
-    if (search) {
+    if (typeof search === "string" && search.trim()) {
+      // Escape regex characters so input like "(" can't break or slow the query.
+      const safeSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
       query.name = {
-        $regex: search,
+        $regex: safeSearch,
         $options: "i",
       };
     }
 
-    if (category) {
+    if (typeof category === "string" && category) {
       query.category = category;
     }
 

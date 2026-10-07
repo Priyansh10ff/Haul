@@ -1,9 +1,20 @@
-import React from "react";
-import image1 from "../assets/image1.png";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axiosInstance from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import AuthLayout, { inputClass, buttonClass } from "../components/AuthLayout";
+
+const FIELDS = [
+  { name: "name", type: "text", placeholder: "Full Name", autoComplete: "name" },
+  { name: "email", type: "email", placeholder: "Email", autoComplete: "email" },
+  { name: "phone", type: "tel", placeholder: "Mobile Number", autoComplete: "tel" },
+  {
+    name: "password",
+    type: "password",
+    placeholder: "Password (min 6 characters)",
+    autoComplete: "new-password",
+  },
+];
 
 const SignUp = () => {
   const [form, setForm] = useState({
@@ -24,6 +35,8 @@ const SignUp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loader) return;
+
     setErr("");
     setLoader(true);
     try {
@@ -31,184 +44,59 @@ const SignUp = () => {
       setCustomer(response.data.newCustomer);
       navigate("/home");
     } catch (error) {
-      setErr(error.response.data.message || "Login falied");
+      setErr(
+        error.response?.data?.message ||
+          "Unable to reach the server. Please try again.",
+      );
     } finally {
       setLoader(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#D8D0C4] flex items-center justify-center p-8">
-      {/* Main Card */}
-      <div className="w-full max-w-[1080px] h-[768px] bg-white rounded-[52px] p-4 flex overflow-hidden">
-        {/* ================= LEFT SIDE ================= */}
-        <div className="w-1/2 flex items-center justify-center">
-          <div className="w-[340px]">
-            {/* Heading */}
-            <div className="text-center mb-12">
-              <h1 className="text-[34px] font-semibold text-[#303030] tracking-[-1.5px]">
-                SignUp 👋
-              </h1>
+    <AuthLayout title="Create account 👋" subtitle="Please enter your details.">
+      <form onSubmit={handleSubmit} noValidate>
+        {err && (
+          <p
+            role="alert"
+            className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-center text-sm text-red-600"
+          >
+            {err}
+          </p>
+        )}
 
-              <p className="text-[11px] text-[#999999] mt-4">
-                Please enter your details.
-              </p>
-            </div>
-
-            {err && <p className="text-center text-red-500">{err}</p>}
-
-            {/* Name */}
-            <div className="relative mb-3">
+        <div className="space-y-3">
+          {FIELDS.map(({ name, type, placeholder, autoComplete }) => (
+            <div key={name}>
+              <label htmlFor={name} className="sr-only">
+                {placeholder}
+              </label>
               <input
-                type="text"
-                name="name"
-                placeholder="Full Name"
-                value={form.name}
+                id={name}
+                type={type}
+                name={name}
+                placeholder={placeholder}
+                autoComplete={autoComplete}
+                value={form[name]}
                 onChange={handleChange}
-                className="
-                  w-full
-                  h-[44px]
-                  rounded-full
-                  border
-                  border-[#d5d5d5]
-                  px-6
-                  text-[11px]
-                  text-[#333]
-                  outline-none
-                  focus:border-[#aaaaaa]
-                  placeholder:text-[#c4c4c4]
-                "
+                className={inputClass}
               />
             </div>
-
-            {/* Email */}
-            <div className="relative mb-3">
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={form.email}
-                onChange={handleChange}
-                className="
-                  w-full
-                  h-[44px]
-                  rounded-full
-                  border
-                  border-[#d5d5d5]
-                  px-6
-                  pr-12
-                  text-[11px]
-                  text-[#333]
-                  outline-none
-                  focus:border-[#aaaaaa]
-                  placeholder:text-[#c4c4c4]
-                "
-              />
-
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#d3d3d3] text-[12px]">
-                ✉
-              </span>
-            </div>
-
-            {/* Phone */}
-            <div className="relative mb-3">
-              <input
-                type="tel"
-                name="phone"
-                placeholder="Mobile Number"
-                value={form.phone}
-                onChange={handleChange}
-                className="
-                  w-full
-                  h-[44px]
-                  rounded-full
-                  border
-                  border-[#d5d5d5]
-                  px-6
-                  pr-12
-                  text-[11px]
-                  text-[#333]
-                  outline-none
-                  focus:border-[#aaaaaa]
-                  placeholder:text-[#c4c4c4]
-                "
-              />
-
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#d3d3d3] text-[12px]">
-                ☎
-              </span>
-            </div>
-
-            {/* Password */}
-            <div className="relative">
-              <input
-                type="password"
-                placeholder="Password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                className="
-                  w-full
-                  h-[44px]
-                  rounded-full
-                  border
-                  border-[#d5d5d5]
-                  px-6
-                  pr-12
-                  text-[11px]
-                  text-[#333]
-                  outline-none
-                  focus:border-[#aaaaaa]
-                  placeholder:text-[#c4c4c4]
-                "
-              />
-
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#d3d3d3] text-[12px]">
-                ◉
-              </span>
-            </div>
-
-            {/* SignUp Button */}
-            <button
-              onClick={handleSubmit}
-              className="
-                w-full
-                h-[44px]
-                rounded-full
-                bg-[#ff9918]
-                hover:bg-[#f58c08]
-                text-white
-                text-[12px]
-                font-medium
-                mt-6
-                transition
-              "
-            >
-              SignUp
-            </button>
-
-            {/* Login */}
-            <p className="text-center text-[11px] text-[#aaaaaa] mt-5">
-              Already have an account?{" "}
-              <Link to="/login" className="text-[#333333] font-medium">
-                LogIn
-              </Link>
-            </p>
-          </div>
+          ))}
         </div>
 
-        {/* ================= RIGHT SIDE ================= */}
-        <div className="w-1/2 p-0">
-          <div className="w-full h-full rounded-[38px] overflow-hidden">
-            <img
-              src={image1}
-              alt="Landscape"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+        <button type="submit" disabled={loader} className={buttonClass}>
+          {loader ? "Creating account..." : "Sign Up"}
+        </button>
+
+        <p className="mt-5 text-center text-sm text-[#aaaaaa]">
+          Already have an account?{" "}
+          <Link to="/login" className="font-semibold text-[#333333] hover:text-[#ff6b35]">
+            Log In
+          </Link>
+        </p>
+      </form>
+    </AuthLayout>
   );
 };
 

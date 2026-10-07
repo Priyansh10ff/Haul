@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import Navbar from "../components/Navbar";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -64,7 +65,9 @@ const Cart = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#faf9f7] px-4 py-20 text-center">
+      <div className="min-h-screen bg-[#faf9f7] text-center">
+        <Navbar />
+        <div className="px-4 py-20">
         <div className="mx-auto max-w-md rounded-3xl bg-white p-12 shadow-sm">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#ff6b35]" />
 
@@ -76,13 +79,16 @@ const Cart = () => {
             Please wait a moment.
           </p>
         </div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#faf9f7] px-4 py-20 text-center">
+      <div className="min-h-screen bg-[#faf9f7] text-center">
+        <Navbar />
+        <div className="px-4 py-20">
         <div className="mx-auto max-w-md rounded-3xl bg-white p-12 shadow-sm">
           <div className="text-5xl">⚠️</div>
 
@@ -101,13 +107,16 @@ const Cart = () => {
             Try Again
           </button>
         </div>
+        </div>
       </div>
     );
   }
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-[#faf9f7] px-4 py-20">
+      <div className="min-h-screen bg-[#faf9f7]">
+        <Navbar />
+        <div className="px-4 py-20">
         <div className="mx-auto max-w-xl rounded-[2rem] bg-white px-6 py-16 text-center shadow-sm">
           <div className="text-6xl">🛒</div>
 
@@ -127,12 +136,15 @@ const Cart = () => {
             Browse Products →
           </button>
         </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#faf9f7]">
+      <Navbar />
+
       {/* Header */}
       <section className="border-b border-gray-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">

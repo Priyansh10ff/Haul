@@ -2,6 +2,7 @@ import crypto from "crypto";
 import mongoose from "mongoose";
 import Customer from "../models/customer.model.js";
 import Order from "../models/order.model.js";
+import Product from "../models/product.model.js";
 import { getRazorpay } from "../config/razorpay.js";
 
 const ADDRESS_FIELDS = [
@@ -123,7 +124,11 @@ export const createPaymentOrder = async (req, res) => {
     } catch (paymentError) {
       // Don't leave an orphaned pending order; the cart is untouched.
       await Order.deleteOne({ _id: order._id });
-      console.log(paymentError);
+      // Razorpay SDK errors are plain objects: { statusCode, error: { description } }
+      console.log(
+        "Razorpay order creation failed:",
+        paymentError.error?.description || paymentError.message || paymentError,
+      );
       return res.status(502).json({
         success: false,
         message: "Unable to start payment. Please try again.",
@@ -190,14 +195,43 @@ export const verifyPayment = async (req, res) => {
         .json({ success: false, message: "Invalid payment signature" });
     }
 
-    order.paymentStatus = "PAID";
-    order.status = "PLACED";
-    order.razorpayPaymentId = razorpay_payment_id;
-    await order.save();
+    // Atomic switch to PAID: if two verify requests race, only one wins,
+    // so stock is reduced exactly once.
+    const paidOrder = await Order.findOneAndUpdate(
+      { _id: order._id, paymentStatus: { $ne: "PAID" } },
+      {
+        $set: {
+          paymentStatus: "PAID",
+          status: "PLACED",
+          razorpayPaymentId: razorpay_payment_id,
+        },
+      },
+      { returnDocument: "after" },
+    );
+
+    if (!paidOrder) {
+      const current = await Order.findById(order._id);
+      return res.status(200).json({ success: true, order: current });
+    }
+
+    // Stock is reduced only after payment is confirmed. The $gte guard keeps
+    // stock from going negative if two customers paid for the last unit.
+    for (const item of paidOrder.items) {
+      const result = await Product.updateOne(
+        { _id: item.product, stock: { $gte: item.quantity } },
+        { $inc: { stock: -item.quantity } },
+      );
+
+      if (result.modifiedCount === 0) {
+        console.log(
+          `Stock conflict: order ${paidOrder._id} is paid but "${item.name}" no longer has ${item.quantity} in stock. Restock or refund manually.`,
+        );
+      }
+    }
 
     await Customer.updateOne({ _id: req.customer._id }, { $set: { cart: [] } });
 
-    return res.status(200).json({ success: true, order });
+    return res.status(200).json({ success: true, order: paidOrder });
   } catch (error) {
     return serverError(res, error);
   }

@@ -1,7 +1,8 @@
 import axios from "axios";
 
+// Set VITE_API_URL in frontend/.env (local) or in your host's dashboard (production).
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:8001",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8001",
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });

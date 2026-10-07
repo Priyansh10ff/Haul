@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import axiosInstance from "../services/api";
+import Navbar from "../components/Navbar";
 
 const ProductDetails = () => {
   const { id } = useParams();
   const { cart, addToCart } = useCart();
 
   const [product, setProduct] = useState(null);
-  const [wishlist, setWishlist] = useState([]);
   const [isWishlisted, setIsWishlisted] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,6 @@ const ProductDetails = () => {
         const currentWishlist = wishlistResponse.data.wishlist || [];
 
         setProduct(currentProduct);
-        setWishlist(currentWishlist);
 
         const exists = currentWishlist.some(
           (item) => item._id === currentProduct._id,
@@ -64,15 +63,9 @@ const ProductDetails = () => {
       if (isWishlisted) {
         await axiosInstance.post(`/customers/wishlist/${product._id}`);
 
-        setWishlist((prev) =>
-          prev.filter((item) => item._id !== product._id),
-        );
-
         setIsWishlisted(false);
       } else {
         await axiosInstance.post(`/customers/wishlist/${product._id}`);
-
-        setWishlist((prev) => [...prev, product]);
 
         setIsWishlisted(true);
       }
@@ -102,7 +95,19 @@ const ProductDetails = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf9f7] px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#faf9f7]">
+      <Navbar />
+
+      <div className="px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto mb-6 max-w-6xl">
+        <Link
+          to="/products"
+          className="text-sm font-medium text-gray-500 transition hover:text-[#ff6b35]"
+        >
+          ← Back to products
+        </Link>
+      </div>
+
       {loading && (
         <div className="mx-auto max-w-6xl rounded-3xl bg-white py-20 text-center shadow-sm">
           <h2 className="text-lg text-[#777]">Loading product...</h2>
@@ -208,10 +213,20 @@ const ProductDetails = () => {
                         ? "Max Stock in Cart"
                         : "Add to Cart"}
               </button>
+
+              {quantity > 0 && (
+                <p className="mt-4 text-center text-sm text-gray-500">
+                  {quantity} in your cart ·{" "}
+                  <Link to="/cart" className="font-semibold text-[#303030] underline">
+                    View cart
+                  </Link>
+                </p>
+              )}
             </div>
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

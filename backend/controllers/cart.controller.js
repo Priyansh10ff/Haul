@@ -1,10 +1,21 @@
+import mongoose from "mongoose";
 import Customer from "../models/customer.model.js";
 import Product from "../models/product.model.js";
+
+const invalidProductId = (res) =>
+  res.status(400).json({
+    success: false,
+    message: "Invalid product ID",
+  });
 
 export const addToCart = async (req, res) => {
   try {
     const customerId = req.customer._id;
     const { productId } = req.params;
+
+    if (!mongoose.isValidObjectId(productId)) {
+      return invalidProductId(res);
+    }
 
     const customer = await Customer.findById(customerId);
     const product = await Product.findById(productId);
@@ -76,9 +87,22 @@ export const getCart = async (req, res) => {
       });
     }
 
+    // Drop items whose product was deleted, so the UI never gets a null product.
+    const validItems = customer.cart.filter((item) => item.product);
+    const deletedItemIds = customer.cart
+      .filter((item) => !item.product)
+      .map((item) => item._id);
+
+    if (deletedItemIds.length) {
+      await Customer.updateOne(
+        { _id: customerId },
+        { $pull: { cart: { _id: { $in: deletedItemIds } } } },
+      );
+    }
+
     return res.status(200).json({
       success: true,
-      cart: customer.cart,
+      cart: validItems,
     });
   } catch (error) {
     console.log(error);
@@ -94,7 +118,11 @@ export const updateCartQuantity = async (req, res) => {
   try {
     const customerId = req.customer._id;
     const { productId } = req.params;
-    const { quantity } = req.body;
+    const { quantity } = req.body || {};
+
+    if (!mongoose.isValidObjectId(productId)) {
+      return invalidProductId(res);
+    }
 
     if (!Number.isInteger(quantity) || quantity < 1) {
       return res.status(400).json({

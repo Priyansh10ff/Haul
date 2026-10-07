@@ -1,257 +1,92 @@
-# ShopKart 🛍️
+# ShopKart
 
-ShopKart is a full-stack MERN e-commerce application built to practice authentication, product management, wishlist functionality, cart management, and frontend state management.
+A full-stack e-commerce store: browse products, save a wishlist, manage a cart and pay with Razorpay. Built with the MERN stack.
+
+**Stack:** React 19 · Vite · Tailwind CSS 4 · Express 5 · MongoDB (Mongoose 9) · Razorpay
+
+---
 
 ## Features
 
-### Authentication
-- Customer registration and login
-- JWT-based authentication
-- HTTP-only authentication cookie
-- Protected and public routes
-- Logout
-- Change password
+- **Accounts:** sign up, log in and log out. Sessions are stored in an HTTP-only JWT cookie, and every page except login and signup is protected.
+- **Catalogue:** product grid with search, category filters (linkable as `/products?category=Books`), live stock and product detail pages.
+- **Wishlist:** add or remove items from any product card or detail page.
+- **Cart:** saved on the server, so it follows you across devices. Quantities are capped at the available stock, and items whose product was deleted are removed automatically.
+- **Checkout:** collects a shipping address, then pays through Razorpay Checkout. The server recalculates the total from the database and verifies the payment signature (HMAC-SHA256). Stock is reduced once the payment is confirmed.
+- **Orders:** order history and order details, plus a confirmation screen after payment.
+- **Responsive UI:** one navbar across every page and a mobile-friendly layout.
 
-### Products
-- View all products
-- View individual product details
-- Search products
-- Filter products by category
-- Product stock display
-- Responsive product cards
+## Quick start
 
-### Wishlist
-- Add products to wishlist
-- Remove products from wishlist
-- View the user's wishlist
-- Wishlist state is reflected on product cards and product details
+**Requirements:** Node.js 20 or newer, a MongoDB database (Atlas free tier works) and Razorpay test keys.
 
-### Cart
-- Add products to cart
-- View cart items
-- Increase/decrease product quantity
-- Remove products from cart
-- Quantity checked against product stock
-- Cart count shared across the application
-- Cart state managed with React Context
+```bash
+# 1. API (http://localhost:8001)
+cd backend
+cp .env.example .env        # fill in MONGO_URL, JWT_SECRET, RAZORPAY_*
+npm install
+npm run dev
 
-## Tech Stack
+# 2. Web app (http://localhost:5173), in a second terminal
+cd frontend
+cp .env.example .env        # VITE_API_URL=http://localhost:8001
+npm install
+npm run dev
+```
 
-### Frontend
-- React
-- React Router
-- Axios
-- Tailwind CSS
-- React Context API
+A new database has no products. Add some with the API (see [docs/TECHNICAL.md](docs/TECHNICAL.md#adding-products)):
 
-### Backend
-- Node.js
-- Express.js
-- MongoDB
-- Mongoose
-- JWT
-- bcrypt
-- cookie-parser
-- CORS
+```bash
+curl -X POST http://localhost:8001/products \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Wireless Headphones","description":"Over-ear, 30h battery","price":2499,"category":"Electronics","image":"https://example.com/headphones.jpg","stock":10}'
+```
 
-## Project Structure
+To test payments, use Razorpay's [test cards or UPI IDs](https://razorpay.com/docs/payments/payments/test-card-details/) while your keys start with `rzp_test_`.
+
+## Environment variables
+
+| App | Key | Purpose |
+|---|---|---|
+| backend | `NODE_ENV` | `production` turns on cross-site cookies (`SameSite=None; Secure`) |
+| backend | `PORT` | API port, default `8001` |
+| backend | `MONGO_URL` | MongoDB connection string |
+| backend | `JWT_SECRET` | Secret used to sign login tokens |
+| backend | `CLIENT_URL` | Allowed frontend origin(s) for CORS, comma-separated |
+| backend | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Razorpay API keys |
+| frontend | `VITE_API_URL` | Base URL of the API |
+
+Full descriptions are in [docs/TECHNICAL.md](docs/TECHNICAL.md#9-environment-variables).
+
+## Scripts
+
+| Location | Command | Does |
+|---|---|---|
+| backend | `npm run dev` | Starts the API with nodemon |
+| backend | `npm start` | Starts the API in production |
+| frontend | `npm run dev` | Vite dev server |
+| frontend | `npm run build` | Production build to `dist/` |
+| frontend | `npm run preview` | Serves the build locally |
+| frontend | `npm run lint` | ESLint |
+
+## Project structure
 
 ```text
 ShopKart/
-├── backend/
-│   ├── controllers/
-│   ├── middlewares/
-│   ├── models/
-│   ├── routes/
-│   ├── utils/
-│   └── server.js
-│
-└── frontend/
-    └── src/
-        ├── components/
-        ├── context/
-        ├── pages/
-        ├── services/
-        └── App.jsx
+├── backend/        Express API: routes → controllers → Mongoose models
+├── frontend/       React SPA: pages, components, context (auth, cart)
+└── docs/           Product, PRD, technical and deployment docs
 ```
 
-## How the Frontend Works
+## Documentation
 
-The main flow is:
-
-```text
-React Component
-      ↓
-Axios Request
-      ↓
-Express Route
-      ↓
-Controller
-      ↓
-MongoDB
-      ↓
-Response
-      ↓
-React State / Context
-      ↓
-UI Update
-```
-
-## Cart Context
-
-The cart is shared between components using React Context API.
-
-Without Context, cart data would have to be passed through props between components. Context provides one shared cart state that components such as the Navbar, Product Details, and Cart page can access.
-
-```text
-CartProvider
-     ↓
-Shared cart state
-     ├── Navbar
-     ├── Product Details
-     ├── Products
-     └── Cart
-```
-
-When the user adds or removes an item:
-
-```text
-User Action
-    ↓
-Cart Context function
-    ↓
-Backend API
-    ↓
-Database update
-    ↓
-Update React state
-    ↓
-UI updates
-```
-
-The Context manages frontend state, while MongoDB stores the persistent cart data.
-
-## Wishlist Flow
-
-```text
-User clicks Wishlist
-        ↓
-POST / DELETE request
-        ↓
-Backend updates wishlist
-        ↓
-Frontend updates wishlist state
-        ↓
-UI reflects the new state
-```
-
-The Product Details page gets the product ID from the URL using React Router's `useParams()`.
-
-```text
-/products/:id
-       ↓
-useParams()
-       ↓
-product ID
-       ↓
-GET /products/:id
-       ↓
-Product details
-```
-
-## Mongoose Populate
-
-Cart and wishlist store references to products.
-
-Without `populate()`:
-
-```text
-cart → product ID
-```
-
-With `populate()`:
-
-```text
-cart → product details
-```
-
-This allows the frontend to receive information such as the product name, price, image, and stock.
-
-## API Configuration
-
-The frontend uses a centralized Axios instance in:
-
-```text
-frontend/src/services/api.js
-```
-
-It contains the backend URL and enables credentials so authentication cookies can be sent with requests.
-
-## Routing
-
-React Router handles navigation.
-
-Main routes:
-
-```text
-/login
-/signup
-/home
-/products
-/products/:id
-```
-
-Protected routes require the user to be authenticated.
-
-## Running the Project
-
-### Backend
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Configure MongoDB and the required environment variables before starting the backend.
-
-## Environment Variables
-
-```text
-MONGO_URI
-JWT_SECRET
-```
-
-Never commit real secrets or API keys to GitHub.
-
-## Concepts Demonstrated
-
-- REST APIs
-- JWT authentication
-- HTTP-only cookies
-- Authentication middleware
-- Protected routes
-- React state management
-- React Context API
-- Axios
-- MongoDB references
-- Mongoose populate
-- Product search and filtering
-- Wishlist management
-- Cart management
-- Quantity management
-- Frontend/backend synchronization
+| Doc | What's in it |
+|---|---|
+| [PRODUCT.md](docs/PRODUCT.md) | What ShopKart is, who it is for, how it works |
+| [PRD.md](docs/PRD.md) | Requirements, user stories, acceptance criteria, scope |
+| [TECHNICAL.md](docs/TECHNICAL.md) | Architecture, data model, API reference, security, known limitations |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Step-by-step deploy to MongoDB Atlas, Render and Vercel |
 
 ## Author
 
-**Priyansh**
-
-Built as a MERN stack e-commerce project for learning and development practice.
+**Priyansh**: [GitHub](https://github.com/Priyansh10ff) · [LinkedIn](https://www.linkedin.com/in/priyansh-dugar-709333363/)

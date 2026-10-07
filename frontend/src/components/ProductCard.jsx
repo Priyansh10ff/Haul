@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../services/api";
 import { useCart } from "../context/CartContext";
@@ -17,20 +17,14 @@ const ProductCard = ({
     addToCart,
   } = useCart();
 
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [cartLoading, setCartLoading] = useState(false);
   const [cartSuccess, setCartSuccess] = useState(false);
 
-  useEffect(() => {
-    if (!wishlist) return;
-
-    const exists = wishlist.some(
-      (item) => item._id === product._id
-    );
-
-    setIsWishlisted(exists);
-  }, [wishlist, product._id]);
+  // Derived from the parent's wishlist; the parent updates it via onWishlistChange.
+  const isWishlisted = Boolean(
+    wishlist?.some((item) => item._id === product._id)
+  );
 
   const cartItem = cart.find(
     (item) => item.product?._id === product._id
@@ -48,9 +42,7 @@ const ProductCard = ({
         `/customers/wishlist/${product._id}`
       );
 
-      const nextIsWishlisted = !isWishlisted;
-      setIsWishlisted(nextIsWishlisted);
-      onWishlistChange?.(nextIsWishlisted);
+      onWishlistChange?.(!isWishlisted);
     } catch (error) {
       console.log(error);
       alert(
@@ -102,6 +94,8 @@ const ProductCard = ({
           type="button"
           disabled={wishlistLoading || !wishlist}
           onClick={handleWishlist}
+          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          aria-pressed={isWishlisted}
           className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-xl shadow-sm backdrop-blur transition-all duration-200 hover:scale-110 active:scale-90 disabled:opacity-50"
         >
           {wishlistLoading
@@ -172,7 +166,9 @@ const ProductCard = ({
               ? "Adding..."
               : cartSuccess
                 ? "✓ Added"
-                : quantity >= product.stock
+                : product.stock <= 0
+                  ? "Out of Stock"
+                  : quantity >= product.stock
                   ? "Max Stock"
                   : "Add to Cart"}
           </button>

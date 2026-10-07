@@ -9,21 +9,25 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const { data } = await axiosInstance.get("/orders");
-      setOrders(data.orders);
-    } catch {
-      setError("Unable to load your orders.");
-    } finally {
-      setLoading(false);
-    }
+  const loadOrders = () =>
+    axiosInstance
+      .get("/orders")
+      .then(({ data }) => {
+        setOrders(data.orders);
+        setError("");
+      })
+      .catch(() => setError("Unable to load your orders."))
+      .finally(() => setLoading(false));
+
+  // Retry button: show the loader again, then reload.
+  const fetchOrders = () => {
+    setLoading(true);
+    setError("");
+    loadOrders();
   };
 
   useEffect(() => {
-    fetchOrders();
+    loadOrders();
   }, []);
 
   let content;

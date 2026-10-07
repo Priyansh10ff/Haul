@@ -15,17 +15,29 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import PageTransition from "./components/PageTransition";
 
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
+
+// Keyed by the logged-in customer so the cart reloads on login and is
+// wiped on logout instead of showing the previous user's data.
+const CustomerCart = ({ children }) => {
+  const { customer } = useAuth();
+
+  return (
+    <CartProvider key={customer?._id || "guest"}>{children}</CartProvider>
+  );
+};
 
 const App = () => {
   return (
     <AuthProvider>
+      <CustomerCart>
       <BrowserRouter>
         <PageTransition>
           <Routes>
             <Route
               path="/"
-              element={<Navigate to="/login" replace />}
+              element={<Navigate to="/home" replace />}
             />
 
             <Route
@@ -126,9 +138,12 @@ const App = () => {
                 </PublicRoute>
               }
             />
+
+            <Route path="*" element={<Navigate to="/home" replace />} />
           </Routes>
         </PageTransition>
       </BrowserRouter>
+      </CustomerCart>
     </AuthProvider>
   );
 };
