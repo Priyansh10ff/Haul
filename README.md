@@ -1,4 +1,4 @@
-# haul.
+# Haul
 
 A full-stack e-commerce store: browse products, save items for later, manage a bag and pay with Razorpay. Built with the MERN stack. (Formerly ShopKart; the repo keeps its original name.)
 
