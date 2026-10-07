@@ -4,12 +4,12 @@ import { useCart } from "../context/CartContext";
 import axiosInstance from "../services/api";
 import Layout from "../components/Layout";
 import ProductImage from "../components/ProductImage";
-import { HeartIcon, MinusIcon, PlusIcon, CheckIcon } from "../components/Icons";
+import { HeartIcon, MinusIcon, PlusIcon, CheckIcon, TrashIcon } from "../components/Icons";
 import { formatPrice, LOW_STOCK, stockText } from "../lib/format";
 
 const ProductDetails = () => {
   const { id } = useParams();
-  const { cart, addToCart, updateQuantity } = useCart();
+  const { cart, addToCart, updateQuantity, removeFromCart, syncCart } = useCart();
 
   const [product, setProduct] = useState(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -35,6 +35,8 @@ const ProductDetails = () => {
         const [productResponse, wishlistResponse] = await Promise.all([
           axiosInstance.get(`/products/${id}`),
           axiosInstance.get("/customers/wishlist"),
+          // Make sure the bag quantity shown here is the latest.
+          syncCart(),
         ]);
 
         const currentProduct = productResponse.data.product;
@@ -53,7 +55,7 @@ const ProductDetails = () => {
     };
 
     fetchData();
-  }, [id]);
+  }, [id, syncCart]);
 
   // Add / remove from wishlist (the endpoint toggles)
   const handleWishlist = async () => {
@@ -70,37 +72,63 @@ const ProductDetails = () => {
     }
   };
 
-  const room = product ? product.stock - inCart : 0;
   const soldOut = product ? product.stock <= 0 : false;
-  const full = !soldOut && room <= 0;
-  const amount = Math.min(qty, Math.max(room, 1));
+  const stock = product?.stock || 0;
+  // Before the item is in the bag the stepper picks how many to add.
+  // Once it is in the bag the stepper edits the bag quantity directly,
+  // so it always matches what the Shop page and the bag show.
+  const pickQty = Math.min(qty, Math.max(stock, 1));
+  const shownQty = inCart > 0 ? inCart : pickQty;
+  const canIncrease = inCart > 0 ? inCart < stock : pickQty < stock;
+  const canDecrease = inCart > 0 ? true : pickQty > 1;
+
+  const run = async (action) => {
+    setCartLoading(true);
+    setMessage("");
+    const result = await action();
+    if (!result.success) setMessage(result.message);
+    setCartLoading(false);
+    return result;
+  };
+
+  const handleIncrease = () => {
+    if (cartLoading || !canIncrease) return;
+    if (inCart > 0) {
+      run(() => updateQuantity(product._id, inCart + 1));
+    } else {
+      setQty(pickQty + 1);
+    }
+  };
+
+  const handleDecrease = () => {
+    if (cartLoading || !canDecrease) return;
+    if (inCart > 1) {
+      run(() => updateQuantity(product._id, inCart - 1));
+    } else if (inCart === 1) {
+      run(() => removeFromCart(product._id));
+      setQty(1);
+    } else {
+      setQty(pickQty - 1);
+    }
+  };
 
   const handleAddToCart = async () => {
-    if (cartLoading || !product || soldOut || full) return;
+    if (cartLoading || !product || soldOut || inCart > 0) return;
 
-    setCartLoading(true);
     setCartSuccess(false);
-    setMessage("");
 
-    // The API adds one unit per call; set the final quantity in one more call.
-    let result = inCart
-      ? { success: true }
-      : await addToCart(product._id);
-
-    const target = inCart + amount;
-    if (result.success && target > Math.max(inCart, 1)) {
-      result = await updateQuantity(product._id, target);
-    }
+    const result = await run(async () => {
+      // The API adds one unit per call; set the chosen quantity in one more call.
+      const added = await addToCart(product._id);
+      if (!added.success || pickQty <= 1) return added;
+      return updateQuantity(product._id, pickQty);
+    });
 
     if (result.success) {
       setCartSuccess(true);
       setQty(1);
       setTimeout(() => setCartSuccess(false), 1800);
-    } else {
-      setMessage(result.message);
     }
-
-    setCartLoading(false);
   };
 
   const lowStock = product && !soldOut && product.stock <= LOW_STOCK;
@@ -181,57 +209,65 @@ const ProductDetails = () => {
               </span>
             </div>
 
+            {inCart > 0 && (
+              <p className="-mb-3 text-sm font-medium text-ink">In your bag</p>
+            )}
+
             <div className="flex flex-wrap gap-2.5">
-              <div className="flex items-center rounded-full bg-paper">
+              <div className={`flex items-center rounded-full ${inCart > 0 ? "bg-ink/5 ring-1 ring-ink/15" : "bg-paper"}`}>
                 <button
                   type="button"
-                  onClick={() => setQty((q) => Math.max(1, q - 1))}
-                  disabled={soldOut || full || qty <= 1}
-                  aria-label="Decrease quantity"
+                  onClick={handleDecrease}
+                  disabled={soldOut || cartLoading || !canDecrease}
+                  aria-label={inCart === 1 ? "Remove from bag" : "Decrease quantity"}
                   className="flex h-14 w-[52px] items-center justify-center rounded-full text-ink hover:bg-mist disabled:text-disabled disabled:hover:bg-transparent"
                 >
-                  <MinusIcon size={18} />
+                  {inCart === 1 ? <TrashIcon size={18} /> : <MinusIcon size={18} />}
                 </button>
                 <span className="min-w-7 text-center text-[17px] font-semibold text-ink" aria-live="polite">
-                  {amount}
+                  {soldOut ? 0 : shownQty}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setQty((q) => Math.min(room, q + 1))}
-                  disabled={soldOut || full || amount >= room}
+                  onClick={handleIncrease}
+                  disabled={soldOut || cartLoading || !canIncrease}
                   aria-label="Increase quantity"
+                  title={!canIncrease && !soldOut ? `Only ${stock} available` : undefined}
                   className="flex h-14 w-[52px] items-center justify-center rounded-full text-ink hover:bg-mist disabled:text-disabled disabled:hover:bg-transparent"
                 >
                   <PlusIcon size={18} />
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                disabled={cartLoading || soldOut || full}
-                className={`flex min-h-14 flex-1 basis-56 items-center justify-center gap-2 rounded-full px-6 text-base font-semibold text-white transition active:scale-[0.99] ${
-                  soldOut || full
-                    ? "cursor-not-allowed bg-disabled"
-                    : cartSuccess
-                      ? "bg-ink-2"
-                      : "bg-ink hover:bg-ink-2"
-                }`}
-              >
-                {cartLoading ? (
-                  "Adding…"
-                ) : cartSuccess ? (
-                  <>
-                    <CheckIcon size={18} /> Added to bag
-                  </>
-                ) : soldOut ? (
-                  "Sold out"
-                ) : full ? (
-                  "All units are in your bag"
-                ) : (
-                  `Add to bag · ${formatPrice(product.price * amount)}`
-                )}
-              </button>
+              {inCart > 0 ? (
+                <Link
+                  to="/cart"
+                  className="flex min-h-14 flex-1 basis-56 items-center justify-center gap-2 rounded-full bg-ink px-6 text-base font-semibold text-white transition hover:bg-ink-2"
+                >
+                  {cartSuccess ? (
+                    <>
+                      <CheckIcon size={18} /> Added · View bag
+                    </>
+                  ) : (
+                    `View bag · ${formatPrice(product.price * inCart)}`
+                  )}
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={cartLoading || soldOut}
+                  className={`flex min-h-14 flex-1 basis-56 items-center justify-center gap-2 rounded-full px-6 text-base font-semibold text-white transition active:scale-[0.99] ${
+                    soldOut ? "cursor-not-allowed bg-disabled" : "bg-ink hover:bg-ink-2"
+                  }`}
+                >
+                  {cartLoading
+                    ? "Adding…"
+                    : soldOut
+                      ? "Sold out"
+                      : `Add to bag · ${formatPrice(product.price * pickQty)}`}
+                </button>
+              )}
 
               <button
                 type="button"
@@ -247,16 +283,18 @@ const ProductDetails = () => {
               </button>
             </div>
 
+            {inCart > 0 && !soldOut && (
+              <p className="-mt-3 text-sm text-muted">
+                {canIncrease
+                  ? `You can add ${stock - inCart} more.`
+                  : `That’s all ${stock} we have, and they’re in your bag.`}
+              </p>
+            )}
+
             {message && (
               <p role="alert" className="rounded-2xl bg-paper px-4 py-3 text-sm text-warn">
                 {message}
               </p>
-            )}
-
-            {inCart > 0 && (
-              <Link to="/cart" className="text-[15px] font-semibold text-ink underline underline-offset-4">
-                View your bag →
-              </Link>
             )}
 
             <div className="mt-auto grid grid-cols-2 gap-2.5">

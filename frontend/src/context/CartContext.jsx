@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import axiosInstance from "../services/api";
 import { useAuth } from "./AuthContext";
 
@@ -59,6 +59,32 @@ export const CartProvider = ({ children }) => {
     return () => {
       cancelled = true;
     };
+  }, [customerId]);
+
+  // Quiet refresh (no loading state), used when a page needs the latest bag
+  // or the tab regains focus after changes made elsewhere.
+  const syncCart = useCallback(async () => {
+    if (!customerId) return;
+    try {
+      const response = await axiosInstance.get("/customers/cart");
+      setCartState(onlyValidItems(response.data.cart));
+    } catch (error) {
+      console.log(error);
+    }
+  }, [customerId]);
+
+  useEffect(() => {
+    if (!customerId) return;
+
+    const onFocus = () => {
+      axiosInstance
+        .get("/customers/cart")
+        .then((response) => setCartState(onlyValidItems(response.data.cart)))
+        .catch(() => {});
+    };
+
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [customerId]);
 
   const addToCart = async (productId) => {
@@ -190,6 +216,7 @@ export const CartProvider = ({ children }) => {
         updateQuantity,
         removeFromCart,
         fetchCart,
+        syncCart,
         clearCart,
       }}
     >
