@@ -48,6 +48,17 @@ const serverError = (res, error) => {
 
 export const createPaymentOrder = async (req, res) => {
   try {
+    // Fail early with a clear reason instead of a generic payment error.
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      console.log(
+        "Razorpay keys missing: set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend/.env and restart the server.",
+      );
+      return res.status(503).json({
+        success: false,
+        message: "Payments are not configured on the server yet.",
+      });
+    }
+
     // Only the shipping address is read from the body; totals/items are ignored.
     const { address, error } = validateShippingAddress(
       req.body?.shippingAddress,
@@ -125,13 +136,17 @@ export const createPaymentOrder = async (req, res) => {
       // Don't leave an orphaned pending order; the cart is untouched.
       await Order.deleteOne({ _id: order._id });
       // Razorpay SDK errors are plain objects: { statusCode, error: { description } }
-      console.log(
-        "Razorpay order creation failed:",
-        paymentError.error?.description || paymentError.message || paymentError,
-      );
+      const reason =
+        paymentError.error?.description || paymentError.message || "unknown error";
+      console.log("Razorpay order creation failed:", reason);
+
+      // Show the real reason while developing; keep it generic in production.
+      const isProduction = process.env.NODE_ENV === "production";
       return res.status(502).json({
         success: false,
-        message: "Unable to start payment. Please try again.",
+        message: isProduction
+          ? "Unable to start payment. Please try again."
+          : `Unable to start payment: ${reason}`,
       });
     }
   } catch (error) {

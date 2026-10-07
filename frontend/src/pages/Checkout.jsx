@@ -141,8 +141,20 @@ const Checkout = () => {
 
       razorpay.open();
     } catch (error) {
+      console.log(error);
+
+      let reason = error.response?.data?.message;
+
+      if (!reason && error.request && !error.response) {
+        // Request went out but nothing came back: server down, wrong URL or CORS.
+        reason = "Can't reach the server. Make sure the backend is running.";
+      }
+
       setMessage(
-        error.response?.data?.message || "Unable to place your order.",
+        reason ||
+          (error.response
+            ? `Unable to place your order (error ${error.response.status}).`
+            : `Unable to open payment: ${error.message}`),
       );
       // Stock or product changes may have happened; refresh the cart view.
       fetchCart();
