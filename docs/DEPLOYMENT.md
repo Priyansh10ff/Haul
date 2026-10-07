@@ -171,7 +171,7 @@ Both platforms issue HTTPS certificates automatically.
 - [ ] `VITE_API_URL` points at the API and the frontend was redeployed after setting it
 - [ ] Sign up, log out, log back in on desktop **and** mobile Safari
 - [ ] Refreshing a deep link (e.g. `/orders`) loads the page, not a 404
-- [ ] Test payment succeeds, stock drops, cart empties, order shows in Orders
+- [ ] Test payment succeeds, stock drops, cart empties, order shows in Orders (skip if running without Razorpay keys; checkout should then say payments are not configured)
 - [ ] Failed test payment leaves the cart unchanged
 - [ ] `.env` files are not in the Git history (`git log --all -- '*.env'`)
 - [ ] Live Razorpay keys are set only after test mode passes

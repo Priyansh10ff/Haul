@@ -277,7 +277,7 @@ curl -X POST "$API_URL/products" \
 ### Orders: `/orders`
 | Method | Path | Auth | Body | Response |
 |---|---|---|---|---|
-| POST | `/create-payment-order` | ✓ | `{ shippingAddress }` | `201 { shopKartOrderId, razorpayOrderId, amount, currency, key }`. `400` for an empty cart, invalid address or stock problem. `502` if Razorpay fails |
+| POST | `/create-payment-order` | ✓ | `{ shippingAddress }` | `201 { shopKartOrderId, razorpayOrderId, amount, currency, key }`. `400` for an empty cart, invalid address or stock problem. `503` when Razorpay keys are not set. `502` if Razorpay rejects the request |
 | POST | `/verify-payment` | ✓ | `{ shopKartOrderId, razorpay_order_id, razorpay_payment_id, razorpay_signature }` | `200 { order }`. `400` for an invalid signature |
 | POST | `/payment-failed` | ✓ | `{ shopKartOrderId }` | Marks a PENDING order FAILED; never downgrades a PAID one |
 | GET | `/` | ✓ | | `{ orders }`, paid orders only, newest first |
@@ -293,6 +293,8 @@ curl -X POST "$API_URL/products" \
 
 - **AuthContext** calls `GET /customers/me` once on load. A `401` simply means "logged out". Login and signup store the returned customer; logout sets it to `null`.
 - **CartContext** is mounted inside `AuthProvider` and keyed by the customer ID (`App.jsx`). Logging in, logging out or switching accounts remounts it, so the cart is always fetched for the current customer and never shows someone else's items. It filters out items whose product is `null`.
+- **Keeping the bag in sync:** every cart action (add, change quantity, remove) replaces the context with the cart the API returns, so the navbar count, Shop cards, product page and bag page all read the same state. `syncCart()` re-reads the bag quietly (no loading state); the product page calls it when it opens, and the context calls it whenever the browser tab regains focus, so changes made in another tab show up too.
+- **Product page quantity:** before the item is in the bag, the stepper chooses how many to add (1 to stock) and the button adds them. Once it is in the bag, the stepper *is* the bag quantity: + and − call the cart API straight away, − at 1 becomes a remove button, and the main button becomes "View bag". A hint shows how many more can be added before stock runs out.
 - **Wishlist** state is local to each page (Products, ProductDetails, Wishlist) and refreshed from the API when the page mounts.
 - **Products** debounces search by 300 ms and ignores responses from older searches. The category lives in the URL query string.
 
@@ -360,7 +362,7 @@ Note: `backend/index.js` calls `dns.setServers(["8.8.8.8", "1.1.1.1"])`. This wo
 | Check | Command | State |
 |---|---|---|
 | Lint | `cd frontend && npm run lint` | Passes with no errors |
-| Build | `cd frontend && npm run build` | Passes (~103 kB JS gzipped) |
+| Build | `cd frontend && npm run build` | Passes (~105 kB JS gzipped) |
 | API smoke test | Manual / script | Covered: signup, login, `/me` without password, CORS, search escaping, cart limits and pruning, signature rejection, concurrent verification (stock reduced once), logout, deleted-user 401 |
 
 There is no automated test suite in the repo yet. Adding `node:test` + `supertest` against `mongodb-memory-server` is planned (see PRD v1.1).

@@ -87,7 +87,9 @@ haul is a self-hosted store with a short, trustworthy path from product to paid 
 - Out-of-stock products cannot be added.
 - I cannot add more units than are in stock; the button shows "Max Stock" when I reach the limit.
 
-**K2. I can change quantities and remove items.** Quantity is at least 1 and at most the current stock.
+**K2. I can change quantities and remove items.** Quantity is at least 1 and at most the current stock, on both the bag page and the product page.
+
+**K2a. The product page reflects my bag.** If the product is already in my bag (added from any page or tab), the product page shows that quantity, lets me raise it up to the stock or lower it, and offers "View bag". If it isn't, I choose how many to add (up to the stock) before adding.
 
 **K3. The cart count in the navbar is always accurate**, including right after logging in, without a page refresh.
 
@@ -160,7 +162,7 @@ haul is a self-hosted store with a short, trustworthy path from product to paid 
 
 | Version | Scope |
 |---|---|
-| **v1.0 (current)** | Everything marked Done above, plus the fixes in this release: password hash no longer exposed, stock reduced on payment, cart reloads on login, production-ready cookies and CORS, logout, responsive UI |
+| **v1.0 (current)** | Everything marked Done above, plus the fixes in this release: password hash no longer exposed, stock reduced on payment, cart reloads on login, production-ready cookies and CORS, logout, the haul redesign, product-page quantity that follows the bag, and running without Razorpay keys (checkout disabled, everything else works) |
 | **v1.1** | Admin-only product creation (FR12), Razorpay webhook (FR13), seed script, rate limiting and security headers on the API |
 | **v1.2** | Admin order management (FR14), change-password screen (FR15), product pagination (FR16), email confirmation on order |
 
