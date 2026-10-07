@@ -1,0 +1,25 @@
+# Render Blueprint for the haul API (backend/).
+# Render → New → Blueprint → pick this repo. Fill MONGO_URL, JWT_SECRET and CLIENT_URL when prompted.
+services:
+  - type: web
+    name: haul-api
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false
+      - key: MONGO_URL
+        sync: false
+      - key: CLIENT_URL
+        sync: false
+      # Payments are optional. Without these two keys the store works normally
+      # and checkout replies "Payments are not configured". Add them later in
+      # Render → Environment to turn payments on:
+      #   RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET

@@ -329,8 +329,8 @@ curl -X POST "$API_URL/products" \
 | `MONGO_URL` | `mongodb+srv://…/shopkart` | MongoDB connection string |
 | `JWT_SECRET` | 64+ random hex chars | Signs login tokens. Changing it logs everyone out |
 | `CLIENT_URL` | `http://localhost:5173` | Allowed frontend origin(s), comma-separated. Defaults to `http://localhost:5173` |
-| `RAZORPAY_KEY_ID` | `rzp_test_…` | Public key, also sent to the browser |
-| `RAZORPAY_KEY_SECRET` | | Secret key, used for creating orders and verifying signatures |
+| `RAZORPAY_KEY_ID` | `rzp_test_…` | Optional. Public key, also sent to the browser. Without both keys checkout returns 503 and everything else works |
+| `RAZORPAY_KEY_SECRET` | | Optional. Secret key, used for creating orders and verifying signatures |
 
 ### `frontend/.env`
 | Key | Example | Purpose |

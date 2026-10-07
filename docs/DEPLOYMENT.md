@@ -38,6 +38,10 @@ These are `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`. Test mode never moves rea
 
 ## 3. API on Render
 
+**Fastest:** the repo has a `render.yaml` Blueprint. In Render choose **New → Blueprint**, pick the repo, and fill in `MONGO_URL`, `JWT_SECRET` (your own secret) and `CLIENT_URL` when asked. Razorpay keys are optional: add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` under Environment whenever you want payments on. Then skip to step 5 below.
+
+**Manual setup:**
+
 1. Push the repo to GitHub.
 2. In [Render](https://render.com) choose **New → Web Service** and connect the repository.
 3. Settings:
@@ -59,8 +63,10 @@ These are `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`. Test mode never moves rea
    | `MONGO_URL` | from step 1 |
    | `JWT_SECRET` | a long random string, e.g. output of `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
    | `CLIENT_URL` | leave as `http://localhost:5173` for now; you'll update it in step 5 |
-   | `RAZORPAY_KEY_ID` | from step 2 |
-   | `RAZORPAY_KEY_SECRET` | from step 2 |
+   | `RAZORPAY_KEY_ID` | from step 2 (optional) |
+   | `RAZORPAY_KEY_SECRET` | from step 2 (optional) |
+
+   Without the Razorpay keys the store runs normally; only checkout is disabled and answers "Payments are not configured on the server yet."
 
    Do not set `PORT`; Render provides it.
 
@@ -176,7 +182,8 @@ Both platforms issue HTTPS certificates automatically.
 |---|---|---|
 | Browser console shows a CORS error | `CLIENT_URL` doesn't match the page origin | Copy the exact origin from the address bar into `CLIENT_URL` |
 | Login succeeds but the next page sends you back to login | Cookie not stored: `NODE_ENV` isn't `production`, or the browser blocks third-party cookies | Set `NODE_ENV=production`; use custom domains (section 7) |
-| "Unable to start payment" at checkout | Missing or wrong Razorpay keys | Check `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` in Render; look for `Razorpay order creation failed` in logs |
+| "Payments are not configured on the server yet" | Razorpay keys not set (expected if you're running without payments) | Add both keys in Render and redeploy |
+| "Unable to start payment" at checkout | Wrong Razorpay keys | Check `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` in Render; look for `Razorpay order creation failed` in logs |
 | "Invalid payment signature" | Key secret doesn't match the key ID (e.g. test ID with live secret) | Use a matching pair from the same mode |
 | First request takes ~40 seconds | Render free instance was asleep | Expected; use an uptime ping or a paid instance |
 | 404 when refreshing a page on Vercel | Root directory isn't `frontend`, so `vercel.json` is ignored | Set Root Directory to `frontend` and redeploy |
