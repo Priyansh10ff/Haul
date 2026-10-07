@@ -1,16 +1,19 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import axiosInstance from "../services/api";
-import Navbar from "../components/Navbar";
+import Layout from "../components/Layout";
+import ProductImage from "../components/ProductImage";
+import { LockIcon } from "../components/Icons";
+import { formatPrice } from "../lib/format";
 
 const FIELDS = [
-  { name: "fullName", label: "Full Name" },
-  { name: "phone", label: "Phone", type: "tel" },
-  { name: "addressLine1", label: "Address" },
-  { name: "city", label: "City" },
-  { name: "state", label: "State" },
-  { name: "pincode", label: "Pincode" },
+  { name: "fullName", label: "Full name", autoComplete: "name", span: 2 },
+  { name: "phone", label: "Mobile number", type: "tel", autoComplete: "tel", inputMode: "numeric" },
+  { name: "pincode", label: "Pincode", autoComplete: "postal-code", inputMode: "numeric" },
+  { name: "addressLine1", label: "Address", autoComplete: "street-address", span: 2 },
+  { name: "city", label: "City", autoComplete: "address-level2" },
+  { name: "state", label: "State", autoComplete: "address-level1" },
 ];
 
 const validate = (values) => {
@@ -20,10 +23,10 @@ const validate = (values) => {
     if (!values[name].trim()) errors[name] = `${label} is required.`;
   }
   if (!errors.phone && !/^[6-9]\d{9}$/.test(values.phone.replace(/[\s-]/g, ""))) {
-    errors.phone = "Phone must be a valid 10-digit number.";
+    errors.phone = "Enter a valid 10-digit mobile number.";
   }
   if (!errors.pincode && !/^\d{6}$/.test(values.pincode.trim())) {
-    errors.pincode = "Pincode must contain 6 digits.";
+    errors.pincode = "Pincode must be 6 digits.";
   }
 
   return errors;
@@ -42,7 +45,7 @@ const loadRazorpayScript = () =>
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cart, loading, subtotal, clearCart, fetchCart } = useCart();
+  const { cart, loading, subtotal, totalItems, clearCart, fetchCart } = useCart();
 
   const [values, setValues] = useState({
     fullName: "",
@@ -76,7 +79,7 @@ const Checkout = () => {
     } catch (error) {
       setMessage(
         error.response?.data?.message ||
-          "We could not verify your payment. Your cart has not been cleared.",
+          "We could not verify your payment. Your bag has not been cleared.",
       );
       setSubmitting(false);
     }
@@ -104,7 +107,7 @@ const Checkout = () => {
 
       const loaded = await loadRazorpayScript();
       if (!loaded) {
-        setMessage("Unable to load Razorpay. Check your connection and retry.");
+        setMessage("Unable to load Razorpay. Check your connection (or ad blocker) and retry.");
         setSubmitting(false);
         return;
       }
@@ -113,8 +116,8 @@ const Checkout = () => {
         key: data.key,
         amount: data.amount,
         currency: data.currency,
-        name: "ShopKart",
-        description: "ShopKart Order",
+        name: "haul.",
+        description: "haul order",
         order_id: data.razorpayOrderId,
         // Not proof of payment: the backend verifies the signature.
         handler: (response) => verifyPayment(data.shopKartOrderId, response),
@@ -122,6 +125,7 @@ const Checkout = () => {
           name: shippingAddress.fullName,
           contact: shippingAddress.phone,
         },
+        theme: { color: "#0F3B37" },
         modal: {
           ondismiss: () => setSubmitting(false),
         },
@@ -133,9 +137,7 @@ const Checkout = () => {
             shopKartOrderId: data.shopKartOrderId,
           })
           .catch(() => {});
-        setMessage(
-          "Payment failed. Your cart has not been cleared. Please try again.",
-        );
+        setMessage("Payment failed. Your bag has not been cleared. Please try again.");
         setSubmitting(false);
       });
 
@@ -156,7 +158,7 @@ const Checkout = () => {
             ? `Unable to place your order (error ${error.response.status}).`
             : `Unable to open payment: ${error.message}`),
       );
-      // Stock or product changes may have happened; refresh the cart view.
+      // Stock or product changes may have happened; refresh the bag.
       fetchCart();
       setSubmitting(false);
     }
@@ -164,109 +166,131 @@ const Checkout = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#faf9f7]">
-        <Navbar />
-        <p className="py-20 text-center text-gray-500">Loading checkout...</p>
-      </div>
+      <Layout>
+        <div className="grid gap-4 pt-6 lg:grid-cols-[1fr_400px]">
+          <div className="h-[480px] animate-pulse rounded-[28px] bg-white motion-reduce:animate-none" />
+          <div className="h-[420px] rounded-[28px] bg-mist" />
+        </div>
+      </Layout>
     );
   }
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-[#faf9f7]">
-        <Navbar />
-        <div className="mx-auto mt-16 max-w-xl rounded-[2rem] bg-white px-6 py-16 text-center shadow-sm">
-          <h1 className="text-2xl font-bold text-[#303030]">
-            Your cart is empty
-          </h1>
-          <p className="mt-2 text-gray-500">Add some products to checkout.</p>
-          <button
-            onClick={() => navigate("/products")}
-            className="mt-6 rounded-full bg-[#303030] px-8 py-3 font-semibold text-white hover:bg-[#ff6b35]"
+      <Layout>
+        <div className="mt-6 rounded-[28px] bg-white px-6 py-20 text-center">
+          <p className="text-[28px] italic text-ink">Your bag is empty.</p>
+          <p className="mt-2 text-muted">Add something before checking out.</p>
+          <Link
+            to="/products"
+            className="mt-6 inline-flex min-h-[52px] items-center rounded-full bg-ink px-7 font-semibold text-white hover:bg-ink-2"
           >
-            Browse Products
-          </button>
+            Browse products
+          </Link>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f7]">
-      <Navbar />
-
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-        <h1 className="text-4xl font-bold text-[#303030]">Checkout</h1>
-
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]"
-        >
-          <section className="rounded-3xl border border-gray-200 bg-white p-6">
-            <h2 className="text-xl font-bold">Shipping Details</h2>
-
-            <div className="mt-5 space-y-4">
-              {FIELDS.map(({ name, label, type }) => (
-                <div key={name}>
-                  <label htmlFor={name} className="text-sm font-medium">
-                    {label}
-                  </label>
-                  <input
-                    id={name}
-                    name={name}
-                    type={type || "text"}
-                    value={values[name]}
-                    onChange={handleChange}
-                    disabled={submitting}
-                    className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-2.5 outline-none focus:border-[#ff6b35]"
-                  />
-                  {errors[name] && (
-                    <p className="mt-1 text-sm text-red-600">{errors[name]}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="h-fit rounded-3xl bg-[#303030] p-6 text-white">
-            <h2 className="text-xl font-bold">Order Summary</h2>
-
-            <ul className="mt-5 space-y-3 text-sm">
-              {cart.map((item) => (
-                <li key={item.product._id} className="flex justify-between gap-4">
-                  <span>
-                    {item.product.name} × {item.quantity}
-                  </span>
-                  <span>
-                    ₹{(item.product.price * item.quantity).toLocaleString("en-IN")}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-5 flex justify-between border-t border-gray-700 pt-5 text-lg font-bold">
-              <span>Total</span>
-              <span>₹{subtotal.toLocaleString("en-IN")}</span>
-            </div>
-
-            {message && (
-              <p className="mt-4 rounded-xl bg-red-500/20 px-4 py-3 text-sm text-red-200">
-                {message}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="mt-6 w-full rounded-full bg-white px-6 py-4 font-bold text-[#303030] transition-all hover:bg-[#ff6b35] hover:text-white disabled:opacity-60"
-            >
-              {submitting ? "Processing..." : "Place Order"}
-            </button>
-          </section>
-        </form>
+    <Layout>
+      <div className="flex flex-wrap items-end justify-between gap-4 pb-8 pt-6">
+        <h1 className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-ink sm:text-[72px]">
+          Checkout
+        </h1>
+        <Link to="/cart" className="text-[15px] text-ink hover:text-ink-2">
+          ← Back to bag
+        </Link>
       </div>
-    </div>
+
+      <form onSubmit={handleSubmit} noValidate className="grid items-start gap-4 lg:grid-cols-[1fr_400px]">
+        <section className="rounded-[28px] bg-white p-6 sm:p-8">
+          <h2 className="text-[28px] font-medium italic tracking-[-0.03em] text-ink">Where should we ship it?</h2>
+          <p className="mt-1 text-[15px] text-muted">Free delivery anywhere in India.</p>
+
+          <div className="mt-7 grid gap-4 sm:grid-cols-2">
+            {FIELDS.map(({ name, label, type, autoComplete, inputMode, span }) => (
+              <div key={name} className={span === 2 ? "sm:col-span-2" : ""}>
+                <label htmlFor={name} className="mb-2 block text-sm font-medium text-ink">
+                  {label}
+                </label>
+                <input
+                  id={name}
+                  name={name}
+                  type={type || "text"}
+                  autoComplete={autoComplete}
+                  inputMode={inputMode}
+                  value={values[name]}
+                  onChange={handleChange}
+                  disabled={submitting}
+                  aria-invalid={Boolean(errors[name])}
+                  aria-describedby={errors[name] ? `${name}-error` : undefined}
+                  className={`min-h-[52px] w-full rounded-full border bg-paper px-5 text-base text-body outline-none transition focus:bg-white disabled:opacity-60 ${
+                    errors[name] ? "border-warn" : "border-line focus:border-ink"
+                  }`}
+                />
+                {errors[name] && (
+                  <p id={`${name}-error`} className="mt-1.5 px-5 text-sm text-warn">
+                    {errors[name]}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <aside className="flex flex-col gap-5 rounded-[28px] bg-ink p-7 text-paper lg:sticky lg:top-6">
+          <h2 className="text-[28px] font-medium italic tracking-[-0.03em]">Your order</h2>
+
+          <ul className="flex flex-col gap-3">
+            {cart.map((item) => (
+              <li key={item.product._id} className="flex items-center gap-3">
+                <ProductImage product={item.product} className="h-14 w-14 shrink-0 rounded-[14px]" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-medium">{item.product.name}</span>
+                  <span className="text-[13px] text-sage-soft">Qty {item.quantity}</span>
+                </span>
+                <span className="text-[15px]">{formatPrice(item.product.price * item.quantity)}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="h-px bg-teal-line" />
+          <div className="flex flex-col gap-2 text-[15px]">
+            <div className="flex justify-between">
+              <span className="text-sage-soft">Subtotal · {totalItems} {totalItems === 1 ? "item" : "items"}</span>
+              <span>{formatPrice(subtotal)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sage-soft">Shipping</span>
+              <span className="font-semibold text-sage">Free</span>
+            </div>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-[15px] text-sage-soft">Total</span>
+            <span className="text-[40px] font-semibold tracking-[-0.04em]">{formatPrice(subtotal)}</span>
+          </div>
+
+          {message && (
+            <p role="alert" className="rounded-2xl bg-white/10 px-4 py-3 text-sm text-paper">
+              {message}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="min-h-[58px] rounded-full bg-paper px-6 text-base font-semibold text-ink transition hover:bg-white disabled:opacity-60"
+          >
+            {submitting ? "Processing…" : `Pay ${formatPrice(subtotal)}`}
+          </button>
+          <p className="flex items-center gap-2 text-[13px] text-sage-soft">
+            <LockIcon size={14} />
+            Secure payment by Razorpay · UPI, cards, netbanking
+          </p>
+        </aside>
+      </form>
+    </Layout>
   );
 };
 

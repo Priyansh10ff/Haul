@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import axiosInstance from "../services/api";
 import { useCart } from "../context/CartContext";
+import ProductImage from "./ProductImage";
+import { HeartIcon, PlusIcon } from "./Icons";
+import { formatPrice, LOW_STOCK, stockText } from "../lib/format";
 
 const EMPTY_WISHLIST = [];
 
@@ -10,171 +13,141 @@ const ProductCard = ({
   wishlist = EMPTY_WISHLIST,
   onWishlistChange,
 }) => {
-  const navigate = useNavigate();
-
-  const {
-    cart,
-    addToCart,
-  } = useCart();
+  const { cart, addToCart } = useCart();
 
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [cartLoading, setCartLoading] = useState(false);
-  const [cartSuccess, setCartSuccess] = useState(false);
+  const [notice, setNotice] = useState("");
 
   // Derived from the parent's wishlist; the parent updates it via onWishlistChange.
   const isWishlisted = Boolean(
     wishlist?.some((item) => item._id === product._id)
   );
 
-  const cartItem = cart.find(
-    (item) => item.product?._id === product._id
-  );
-
+  const cartItem = cart.find((item) => item.product?._id === product._id);
   const quantity = cartItem?.quantity || 0;
+
+  const soldOut = product.stock <= 0;
+  const atMax = !soldOut && quantity >= product.stock;
+  const lowStock = !soldOut && product.stock <= LOW_STOCK;
+
+  const flash = (message) => {
+    setNotice(message);
+    setTimeout(() => setNotice(""), 2500);
+  };
 
   const handleWishlist = async () => {
     if (wishlistLoading || !wishlist) return;
 
     try {
       setWishlistLoading(true);
-
-      await axiosInstance.post(
-        `/customers/wishlist/${product._id}`
-      );
-
+      await axiosInstance.post(`/customers/wishlist/${product._id}`);
       onWishlistChange?.(!isWishlisted);
     } catch (error) {
       console.log(error);
-      alert(
-        error.response?.data?.message || "Unable to update wishlist",
-      );
+      flash(error.response?.data?.message || "Couldn't update saved items");
     } finally {
       setWishlistLoading(false);
     }
   };
 
   const handleAddToCart = async () => {
-    if (cartLoading || product.stock <= 0) return;
+    if (cartLoading || soldOut || atMax) return;
 
     setCartLoading(true);
-    setCartSuccess(false);
-
     const result = await addToCart(product._id);
-
-    if (result.success) {
-      setCartSuccess(true);
-
-      setTimeout(() => {
-        setCartSuccess(false);
-      }, 1500);
-    } else {
-      alert(result.message);
-    }
-
+    if (!result.success) flash(result.message);
     setCartLoading(false);
   };
 
-  return (
-    <div className="group overflow-hidden rounded-3xl border border-gray-200 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-      {/* Image */}
-      <div className="relative h-64 overflow-hidden bg-[#f5f2ed]">
-        <img
-          src={product.image}
-          alt={product.name}
-          loading="lazy"
-          className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-        />
+  const addLabel = soldOut
+    ? "Sold out"
+    : atMax
+      ? "All available units are in your bag"
+      : `Add ${product.name} to bag`;
 
-        <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-gray-700 backdrop-blur">
+  return (
+    <article className="group flex flex-col rounded-[26px] bg-white p-2.5">
+      <div className="relative">
+        <Link to={`/products/${product._id}`} aria-label={product.name}>
+          <ProductImage
+            product={product}
+            className="aspect-[4/5] rounded-[18px]"
+            imgClassName="transition duration-500 group-hover:scale-[1.03] motion-reduce:transition-none"
+          />
+        </Link>
+
+        <span className="absolute left-3 top-3 rounded-full bg-white/85 px-3 py-1.5 text-[13px] text-ink backdrop-blur">
           {product.category}
         </span>
 
-        {/* Wishlist */}
         <button
           type="button"
-          disabled={wishlistLoading || !wishlist}
           onClick={handleWishlist}
-          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          disabled={wishlistLoading || !wishlist}
+          aria-label={isWishlisted ? "Remove from saved" : "Save for later"}
           aria-pressed={isWishlisted}
-          className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-xl shadow-sm backdrop-blur transition-all duration-200 hover:scale-110 active:scale-90 disabled:opacity-50"
+          className={`absolute right-2.5 top-2.5 flex h-11 w-11 items-center justify-center rounded-full bg-white transition active:scale-90 disabled:opacity-60 ${
+            isWishlisted ? "text-heart" : "text-ink"
+          }`}
         >
-          {wishlistLoading
-            ? "..."
-            : isWishlisted
-              ? "❤️"
-              : "♡"}
+          <HeartIcon size={18} filled={isWishlisted} />
+        </button>
+
+        {soldOut && (
+          <span className="absolute bottom-3 left-3 rounded-full bg-ink px-3 py-1.5 text-[13px] text-white">
+            Sold out
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-end justify-between gap-3 px-2 pb-2 pt-4">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <Link
+            to={`/products/${product._id}`}
+            className="truncate text-lg font-semibold tracking-[-0.01em] text-ink hover:text-ink-2"
+          >
+            {product.name}
+          </Link>
+          <span className="flex items-baseline gap-2.5">
+            <span className="text-[17px] font-semibold text-ink">
+              {formatPrice(product.price)}
+            </span>
+            <span className={`text-[13px] ${lowStock ? "text-warn" : "text-muted"}`}>
+              {stockText(product.stock)}
+            </span>
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          disabled={cartLoading || soldOut || atMax}
+          aria-label={addLabel}
+          title={addLabel}
+          className={`flex h-12 min-w-12 shrink-0 items-center justify-center gap-1.5 rounded-full text-sm font-semibold text-white transition active:scale-95 ${
+            quantity ? "px-4" : ""
+          } ${
+            soldOut || atMax
+              ? "cursor-not-allowed bg-disabled"
+              : "bg-ink hover:bg-ink-2"
+          }`}
+        >
+          {cartLoading ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+          ) : (
+            <PlusIcon size={18} />
+          )}
+          {quantity > 0 && <span>{quantity}</span>}
         </button>
       </div>
 
-      {/* Content */}
-      <div className="p-5">
-        <h2 className="line-clamp-2 min-h-[3.5rem] text-lg font-semibold text-[#303030]">
-          {product.name}
-        </h2>
-
-        <p className="mt-3 text-xl font-bold text-[#303030]">
-          ₹{product.price.toLocaleString("en-IN")}
+      {notice && (
+        <p role="alert" className="mx-2 mb-2 rounded-2xl bg-paper px-3 py-2 text-[13px] text-warn">
+          {notice}
         </p>
-
-        <p
-          className={`mt-3 text-sm font-medium ${
-            product.stock > 0
-              ? "text-green-700"
-              : "text-red-600"
-          }`}
-        >
-          {product.stock > 0
-            ? `${product.stock} units left`
-            : "Out of stock"}
-        </p>
-
-        {/* Cart status */}
-        {quantity > 0 && (
-          <div className="mt-3 rounded-xl bg-[#f5f2ed] px-4 py-2 text-center text-sm font-medium text-[#303030]">
-            {quantity}{" "}
-            {quantity === 1 ? "item" : "items"} in cart
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() =>
-              navigate(`/products/${product._id}`)
-            }
-            className="rounded-full border border-gray-300 px-4 py-3 text-sm font-semibold text-[#303030] transition-all duration-200 hover:border-[#303030] hover:bg-[#303030] hover:text-white active:scale-95"
-          >
-            Details
-          </button>
-
-          <button
-            type="button"
-            disabled={
-              cartLoading ||
-              product.stock <= 0 ||
-              quantity >= product.stock
-            }
-            onClick={handleAddToCart}
-            className={`rounded-full px-4 py-3 text-sm font-semibold text-white transition-all duration-200 active:scale-95 ${
-              cartSuccess
-                ? "bg-green-600"
-                : "bg-[#303030] hover:bg-[#ff6b35]"
-            } disabled:cursor-not-allowed disabled:bg-gray-300`}
-          >
-            {cartLoading
-              ? "Adding..."
-              : cartSuccess
-                ? "✓ Added"
-                : product.stock <= 0
-                  ? "Out of Stock"
-                  : quantity >= product.stock
-                  ? "Max Stock"
-                  : "Add to Cart"}
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    </article>
   );
 };
 

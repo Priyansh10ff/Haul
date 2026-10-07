@@ -1,6 +1,6 @@
-# ShopKart: Deployment Guide
+# haul: Deployment Guide
 
-Step-by-step instructions for putting ShopKart online with free tiers:
+Step-by-step instructions for putting haul online with free tiers:
 
 | Piece | Platform |
 |---|---|
@@ -145,7 +145,7 @@ Both platforms issue HTTPS certificates automatically.
 2. Switch the dashboard to **Live Mode** and generate live API keys (`rzp_live_…`).
 3. Replace `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in Render. No frontend change is needed, because the key ID is sent by the API at checkout.
 4. Make one small real payment and refund it from the dashboard.
-5. Until the webhook ships, check **Payments** in the Razorpay dashboard daily for captured payments whose ShopKart order is still PENDING (the receipt field is the ShopKart order ID).
+5. Until the webhook ships, check **Payments** in the Razorpay dashboard daily for captured payments whose haul order is still PENDING (the receipt field is the haul order ID).
 
 ## 9. Operations
 

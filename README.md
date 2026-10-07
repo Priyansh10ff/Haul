@@ -1,6 +1,6 @@
-# ShopKart
+# haul.
 
-A full-stack e-commerce store: browse products, save a wishlist, manage a cart and pay with Razorpay. Built with the MERN stack.
+A full-stack e-commerce store: browse products, save items for later, manage a bag and pay with Razorpay. Built with the MERN stack. (Formerly ShopKart; the repo keeps its original name.)
 
 **Stack:** React 19 · Vite · Tailwind CSS 4 · Express 5 · MongoDB (Mongoose 9) · Razorpay
 
@@ -14,7 +14,7 @@ A full-stack e-commerce store: browse products, save a wishlist, manage a cart a
 - **Cart:** saved on the server, so it follows you across devices. Quantities are capped at the available stock, and items whose product was deleted are removed automatically.
 - **Checkout:** collects a shipping address, then pays through Razorpay Checkout. The server recalculates the total from the database and verifies the payment signature (HMAC-SHA256). Stock is reduced once the payment is confirmed.
 - **Orders:** order history and order details, plus a confirmation screen after payment.
-- **Responsive UI:** one navbar across every page and a mobile-friendly layout.
+- **Design:** soft sage-and-teal palette, Instrument Sans, rounded cards and pill controls, a photo hero, skeleton loaders and empty states on every page. Works from 390 px phones to wide desktops.
 
 ## Quick start
 
@@ -82,7 +82,7 @@ ShopKart/
 
 | Doc | What's in it |
 |---|---|
-| [PRODUCT.md](docs/PRODUCT.md) | What ShopKart is, who it is for, how it works |
+| [PRODUCT.md](docs/PRODUCT.md) | What haul is, who it is for, how it works |
 | [PRD.md](docs/PRD.md) | Requirements, user stories, acceptance criteria, scope |
 | [TECHNICAL.md](docs/TECHNICAL.md) | Architecture, data model, API reference, security, known limitations |
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Step-by-step deploy to MongoDB Atlas, Render and Vercel |

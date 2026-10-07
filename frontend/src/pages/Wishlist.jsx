@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "../services/api";
 import ProductCard from "../components/ProductCard";
-import Navbar from "../components/Navbar";
+import Layout from "../components/Layout";
 
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
@@ -31,89 +31,69 @@ const Wishlist = () => {
     return () => window.removeEventListener("focus", fetchWishlist);
   }, []);
 
+  let content;
+
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#faf9f7] text-center">
-        <Navbar />
-        <div className="py-20">
-        <h2 className="text-lg text-gray-500">Loading wishlist...</h2>
-        </div>
+    content = (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="aspect-[4/5] animate-pulse rounded-[26px] bg-white motion-reduce:animate-none" />
+        ))}
       </div>
     );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#faf9f7] text-center">
-        <Navbar />
-        <div className="py-20">
-        <h2 className="text-lg text-red-600">
-          Something went wrong while loading your wishlist.
-        </h2>
-        </div>
+  } else if (error) {
+    content = (
+      <div className="rounded-[28px] bg-white px-6 py-20 text-center">
+        <p className="text-2xl italic text-ink">We couldn’t load your saved items.</p>
+      </div>
+    );
+  } else if (wishlist.length === 0) {
+    content = (
+      <div className="rounded-[28px] bg-white px-6 py-20 text-center">
+        <p className="text-[28px] italic text-ink">Nothing saved yet.</p>
+        <p className="mt-2 text-muted">Tap the heart on any product to keep it here.</p>
+        <Link
+          to="/products"
+          className="mt-6 inline-flex min-h-[52px] items-center rounded-full bg-ink px-7 font-semibold text-white hover:bg-ink-2"
+        >
+          Browse products
+        </Link>
+      </div>
+    );
+  } else {
+    content = (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {wishlist.map((product) => (
+          <ProductCard
+            key={product._id}
+            product={product}
+            wishlist={wishlist}
+            onWishlistChange={(isWishlisted) => {
+              if (!isWishlisted) {
+                setWishlist((currentWishlist) =>
+                  currentWishlist.filter((item) => item._id !== product._id),
+                );
+              }
+            }}
+          />
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f7]">
-      <Navbar />
-      <main className="px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8">
-          <p className="text-sm font-medium text-[#ff6b35]">YOUR COLLECTION</p>
-
-          <h1 className="mt-2 text-3xl font-bold text-[#303030]">
-            My Wishlist
-          </h1>
-
-          <p className="mt-2 text-sm text-gray-500">
-            Products you saved for later.
-          </p>
-        </div>
-
-        {wishlist.length === 0 ? (
-          <div className="rounded-3xl bg-white py-20 text-center shadow-sm">
-            <p className="text-5xl">♡</p>
-
-            <h2 className="mt-5 text-xl font-semibold text-[#303030]">
-              Your wishlist is empty
-            </h2>
-
-            <p className="mt-2 text-sm text-gray-500">
-              Add products to your wishlist and they will appear here.
-            </p>
-
-            <Link
-              to="/products"
-              className="mt-6 inline-block rounded-full bg-[#303030] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#ff6b35]"
-            >
-              Browse Products →
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {wishlist.map((product) => (
-              <ProductCard
-                key={product._id}
-                product={product}
-                wishlist={wishlist}
-                onWishlistChange={(isWishlisted) => {
-                  if (!isWishlisted) {
-                    setWishlist((currentWishlist) =>
-                      currentWishlist.filter(
-                        (item) => item._id !== product._id,
-                      ),
-                    );
-                  }
-                }}
-              />
-            ))}
-          </div>
-        )}
+    <Layout>
+      <div className="pb-8 pt-6">
+        <h1 className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-ink sm:text-[72px]">
+          Saved
+          {!loading && wishlist.length > 0 && (
+            <span className="font-normal italic text-faint"> ({wishlist.length})</span>
+          )}
+        </h1>
+        <p className="mt-3 text-[15px] text-muted">Products you’re keeping an eye on.</p>
       </div>
-      </main>
-    </div>
+      {content}
+    </Layout>
   );
 };
 

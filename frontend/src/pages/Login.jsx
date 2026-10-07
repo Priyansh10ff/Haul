@@ -2,7 +2,7 @@ import { useState } from "react";
 import axiosInstance from "../services/api";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import AuthLayout, { inputClass, buttonClass } from "../components/AuthLayout";
+import AuthLayout, { inputClass, labelClass, buttonClass } from "../components/AuthLayout";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -39,53 +39,54 @@ const Login = () => {
   };
 
   return (
-    <AuthLayout title="Welcome back 👋" subtitle="Please enter your details.">
-      <form onSubmit={handleSubmit} noValidate>
+    <AuthLayout
+      mode="login"
+      title="Welcome back"
+      subtitle="Log in to see your bag and orders."
+    >
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         {err && (
-          <p
-            role="alert"
-            className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-center text-sm text-red-600"
-          >
+          <p role="alert" className="rounded-2xl bg-paper px-4 py-3 text-sm text-warn">
             {err}
           </p>
         )}
 
-        <label htmlFor="email" className="sr-only">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          placeholder="Email"
-          name="email"
-          autoComplete="email"
-          value={form.email}
-          onChange={handleChange}
-          className={`${inputClass} mb-3`}
-        />
+        <div>
+          <label htmlFor="email" className={labelClass}>Email</label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={form.email}
+            onChange={handleChange}
+            className={inputClass}
+          />
+        </div>
 
-        <label htmlFor="password" className="sr-only">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          placeholder="Password"
-          name="password"
-          autoComplete="current-password"
-          value={form.password}
-          onChange={handleChange}
-          className={inputClass}
-        />
+        <div>
+          <label htmlFor="password" className={labelClass}>Password</label>
+          <input
+            id="password"
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            placeholder="Your password"
+            value={form.password}
+            onChange={handleChange}
+            className={inputClass}
+          />
+        </div>
 
         <button type="submit" disabled={loader} className={buttonClass}>
-          {loader ? "Logging in..." : "Log In"}
+          {loader ? "Logging in…" : "Log in"}
         </button>
 
-        <p className="mt-5 text-center text-sm text-[#aaaaaa]">
-          Don't have an account?{" "}
-          <Link to="/signup" className="font-semibold text-[#333333] hover:text-[#ff6b35]">
-            Sign Up
+        <p className="text-center text-sm text-muted">
+          New to haul?{" "}
+          <Link to="/signup" className="font-semibold text-ink underline underline-offset-4">
+            Create an account
           </Link>
         </p>
       </form>

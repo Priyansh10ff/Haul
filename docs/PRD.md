@@ -1,8 +1,8 @@
-# ShopKart: Product Requirements Document
+# haul: Product Requirements Document
 
 | | |
 |---|---|
-| **Product** | ShopKart web store |
+| **Product** | haul web store |
 | **Owner** | Priyansh |
 | **Status** | v1.0 shipped, v1.1 planned |
 | **Last updated** | October 2026 |
@@ -15,7 +15,7 @@ Related: [PRODUCT.md](./PRODUCT.md) (overview) · [TECHNICAL.md](./TECHNICAL.md)
 
 Small sellers and student teams who want to sell online have two poor options: list on a marketplace (commission, no brand, competitors one click away) or assemble a store from plugins they don't control. Shoppers, meanwhile, abandon stores whose checkout is slow, whose totals change at the last step, or whose payments fail without explanation.
 
-ShopKart is a self-hosted store with a short, trustworthy path from product to paid order, built on free hosting tiers and the payment gateway Indian shoppers already use.
+haul is a self-hosted store with a short, trustworthy path from product to paid order, built on free hosting tiers and the payment gateway Indian shoppers already use.
 
 ## 2. Goals
 

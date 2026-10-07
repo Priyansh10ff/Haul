@@ -1,4 +1,4 @@
-# ShopKart
+# haul
 
 A simple, honest online store. Find a product, add it to your cart, pay with UPI or card, and see your order. Nothing else gets in the way.
 
@@ -6,14 +6,14 @@ A simple, honest online store. Find a product, add it to your cart, pay with UPI
 
 ## What it is
 
-ShopKart is a web store for a small catalogue of everyday products across electronics, fashion, books and home goods. Shoppers create an account, browse and search the catalogue, keep a wishlist, build a cart and check out through Razorpay, India's most widely used payment gateway. After paying, they can come back any time to see what they ordered and where it is being shipped.
+haul is a web store for a small catalogue of everyday products across electronics, fashion, books and home goods. Shoppers create an account, browse and search the catalogue, keep a wishlist, build a cart and check out through Razorpay, India's most widely used payment gateway. After paying, they can come back any time to see what they ordered and where it is being shipped.
 
 The cart and wishlist are stored on the server, not in the browser, so a shopper who adds something on their laptop sees it on their phone.
 
 ## Why it exists
 
 - **Small sellers need a store, not a marketplace.** Marketplaces take a commission and put the seller's products next to competitors. A small brand or college store needs its own checkout with its own catalogue.
-- **Checkout is where most stores lose people.** Long forms, surprise totals and failed payments drive shoppers away. ShopKart keeps checkout to one short address form and one payment step, with the total shown before you pay.
+- **Checkout is where most stores lose people.** Long forms, surprise totals and failed payments drive shoppers away. haul keeps checkout to one short address form and one payment step, with the total shown before you pay.
 - **Prices and stock must be trusted.** The amount charged is always calculated on the server from the live catalogue. Nothing the browser sends can change a price, and a shopper can never put more in the cart than is in stock.
 - **Payments must be verified, not assumed.** An order only counts as paid after the server has checked Razorpay's cryptographic signature. A closed popup or a failed card never turns into a "paid" order.
 

@@ -1,4 +1,4 @@
-# ShopKart: Technical Reference
+# haul: Technical Reference
 
 How the system is built: architecture, stack, folder structure, data model, the order and payment flow, the REST API, security, configuration and known limitations. For the product side see [PRODUCT.md](./PRODUCT.md); for requirements see [PRD.md](./PRD.md).
 
@@ -40,7 +40,8 @@ How the system is built: architecture, stack, folder structure, data model, the 
 |---|---|
 | UI | React 19 |
 | Build / dev server | Vite 8 (`@vitejs/plugin-react`) |
-| Styling | Tailwind CSS 4 via `@tailwindcss/vite` |
+| Styling | Tailwind CSS 4 via `@tailwindcss/vite`; design tokens (colours, font) in `src/index.css` `@theme` |
+| Type | Instrument Sans (Google Fonts, loaded in `index.html`) |
 | Routing | React Router 7 (`react-router-dom`) |
 | HTTP | Axios, one configured instance with `withCredentials: true` |
 | State | React Context (`AuthContext`, `CartContext`), local state elsewhere |
@@ -104,17 +105,22 @@ ShopKart/
     └── src/
         ├── main.jsx
         ├── App.jsx               Providers + routes (protected / public)
-        ├── index.css             Tailwind import + page fade animation
+        ├── index.css             Tailwind import, @theme tokens (ink, paper, sage…), page fade
+        ├── lib/format.js         Price formatting, stock text, product tile tones, categories
+        ├── assets/hero.jpg       Hero / auth background photo
         ├── services/api.js       Axios instance (VITE_API_URL, credentials)
         ├── context/
         │   ├── AuthContext.jsx   Current customer, loaded from GET /customers/me
         │   └── CartContext.jsx   Cart state and actions, re-created per customer
         ├── components/
-        │   ├── Navbar.jsx        Links, cart count, logout, mobile link bar
-        │   ├── AuthLayout.jsx    Shared login/signup shell
-        │   ├── ProductCard.jsx
-        │   ├── SearchBar.jsx, CategoryFilter.jsx
-        │   ├── ProtectedRoute.jsx, PublicRoute.jsx
+        │   ├── Layout.jsx        Page shell: Navbar + content + Footer
+        │   ├── Navbar.jsx        Links, saved, bag count, logout, mobile link bar
+        │   ├── Footer.jsx, Wordmark.jsx, Icons.jsx
+        │   ├── AuthLayout.jsx    Shared login/signup shell (photo panel + form)
+        │   ├── ProductCard.jsx   Card with save, stock and add-to-bag
+        │   ├── ProductImage.jsx  Photo on a tinted tile, initial as fallback
+        │   ├── SearchBar.jsx, CategoryFilter.jsx (pills)
+        │   ├── ProtectedRoute.jsx, PublicRoute.jsx, FullPageLoader.jsx
         │   └── PageTransition.jsx
         └── pages/
             ├── Login.jsx, SignUp.jsx
@@ -130,7 +136,7 @@ ShopKart/
 | Path | Page | Access |
 |---|---|---|
 | `/login`, `/signup` | Auth forms | Logged out only |
-| `/home` | Landing with categories and quick links | Logged in |
+| `/home` | Hero, categories, "Almost gone" (low stock), "Just in" | Logged in |
 | `/products` | Catalogue (`?category=` supported) | Logged in |
 | `/products/:id` | Product details | Logged in |
 | `/wishlist` | Wishlist | Logged in |

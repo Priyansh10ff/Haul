@@ -36,7 +36,7 @@ app.use("/orders", orderRoutes);
 
 app.get("/", (req, res) => {
   res.json({
-    message: "Hello, Welcome to ShopKart",
+    message: "Hello, welcome to haul",
   });
 });
 

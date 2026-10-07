@@ -1,10 +1,24 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import axiosInstance from "../services/api";
-import Navbar from "../components/Navbar";
+import Layout from "../components/Layout";
+import { formatPrice } from "../lib/format";
+
+const STATUS_LABEL = {
+  PLACED: "Placed",
+  CONFIRMED: "Confirmed",
+  SHIPPED: "Shipped",
+  DELIVERED: "Delivered",
+};
+
+const formatDate = (value) =>
+  new Date(value).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
 const Orders = () => {
-  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -33,86 +47,90 @@ const Orders = () => {
   let content;
 
   if (loading) {
-    content = <p className="py-16 text-center text-gray-500">Loading orders...</p>;
+    content = (
+      <div className="space-y-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-[132px] animate-pulse rounded-[26px] bg-white motion-reduce:animate-none" />
+        ))}
+      </div>
+    );
   } else if (error) {
     content = (
-      <div className="py-16 text-center">
-        <p className="text-red-600">{error}</p>
+      <div className="rounded-[28px] bg-white px-6 py-20 text-center">
+        <p className="text-2xl italic text-ink">{error}</p>
         <button
+          type="button"
           onClick={fetchOrders}
-          className="mt-4 rounded-full bg-[#303030] px-6 py-3 text-sm font-semibold text-white hover:bg-[#ff6b35]"
+          className="mt-6 min-h-[52px] rounded-full bg-ink px-7 font-semibold text-white hover:bg-ink-2"
         >
-          Try Again
+          Try again
         </button>
       </div>
     );
   } else if (orders.length === 0) {
     content = (
-      <div className="py-16 text-center">
-        <p className="text-gray-600">You have not placed any orders yet.</p>
-        <button
-          onClick={() => navigate("/products")}
-          className="mt-4 rounded-full bg-[#303030] px-6 py-3 text-sm font-semibold text-white hover:bg-[#ff6b35]"
+      <div className="rounded-[28px] bg-white px-6 py-20 text-center">
+        <p className="text-[28px] italic text-ink">No orders yet.</p>
+        <p className="mt-2 text-muted">When you check out, your orders show up here.</p>
+        <Link
+          to="/products"
+          className="mt-6 inline-flex min-h-[52px] items-center rounded-full bg-ink px-7 font-semibold text-white hover:bg-ink-2"
         >
-          Start Shopping
-        </button>
+          Start shopping
+        </Link>
       </div>
     );
   } else {
     content = (
-      <div className="space-y-4">
-        {orders.map((order) => (
-          <div
-            key={order._id}
-            className="rounded-3xl border border-gray-200 bg-white p-6"
-          >
-            <div className="flex flex-wrap justify-between gap-2">
-              <p className="font-bold">Order #{order._id.slice(-8)}</p>
-              <p className="text-sm text-gray-500">
-                {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </p>
-            </div>
+      <div className="flex flex-col gap-3">
+        {orders.map((order) => {
+          const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
-            <ul className="mt-3 space-y-1 text-sm text-gray-700">
-              {order.items.map((item) => (
-                <li key={item._id}>
-                  {item.name} × {item.quantity}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="font-bold">
-                  Total: ₹{order.totalAmount.toLocaleString("en-IN")}
+          return (
+            <Link
+              key={order._id}
+              to={`/orders/${order._id}`}
+              className="group grid gap-4 rounded-[26px] bg-white p-6 transition hover:shadow-[0_8px_30px_rgba(15,59,55,0.08)] sm:grid-cols-[1fr_auto] sm:items-center"
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-lg font-semibold text-ink">
+                    Order #{order._id.slice(-8).toUpperCase()}
+                  </span>
+                  <span className="rounded-full bg-paper px-3 py-1 text-[13px] text-ink">
+                    {STATUS_LABEL[order.status] || order.status}
+                  </span>
+                </div>
+                <p className="mt-2 truncate text-[15px] text-muted">
+                  {formatDate(order.createdAt)} ·{" "}
+                  {order.items.map((item) => item.name).join(", ")}
                 </p>
-                <p className="text-sm text-gray-500">Status: {order.status}</p>
               </div>
-              <Link
-                to={`/orders/${order._id}`}
-                className="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold hover:bg-[#303030] hover:text-white"
-              >
-                View Details
-              </Link>
-            </div>
-          </div>
-        ))}
+              <div className="flex items-center justify-between gap-6 sm:justify-end">
+                <span className="text-right">
+                  <span className="block text-xl font-semibold text-ink">
+                    {formatPrice(order.totalAmount)}
+                  </span>
+                  <span className="text-[13px] text-muted">
+                    {itemCount} {itemCount === 1 ? "item" : "items"}
+                  </span>
+                </span>
+                <span className="text-[15px] font-semibold text-ink group-hover:text-ink-2">View →</span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f7]">
-      <Navbar />
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-        <h1 className="mb-8 text-4xl font-bold text-[#303030]">My Orders</h1>
-        {content}
-      </div>
-    </div>
+    <Layout>
+      <h1 className="pb-8 pt-6 text-[48px] font-semibold leading-none tracking-[-0.05em] text-ink sm:text-[72px]">
+        Orders
+      </h1>
+      {content}
+    </Layout>
   );
 };
 
