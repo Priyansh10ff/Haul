@@ -1,10 +1,6 @@
-<<<<<<< HEAD
-# Haul
-=======
 <div align="center">
 
-# haul.
->>>>>>> e411bd1 (docs: production README with screenshots and deploy buttons; make Razorpay keys optional)
+# Haul
 
 **An online store for everyday things.**
 
